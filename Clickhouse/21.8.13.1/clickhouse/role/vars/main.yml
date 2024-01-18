@@ -1,0 +1,12 @@
+#镜像名称
+image_name: clickhouse
+
+#镜像版本号
+image_tag: 21.8.13.1.altinitystable
+
+#容器名称
+container_name: clickhouse
+
+#组件版本
+component_version: clickhouse-21.8.13.1.altinitystable
+

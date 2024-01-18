@@ -1,0 +1,41 @@
+- name: Waitting for Druid running,60s
+  shell: sleep 60
+
+- block:
+    - name: Check if the Druid already exists
+      shell: ps -ef | grep -v grep | grep "org.apache.druid.cli.Main server" | wc -l
+      register: process_out
+    
+    - name: To terminate execution
+      fail:
+       msg: "Druid on node {{ inventory_hostname }} is not started. Please check"
+      run_once: true
+      delegate_to: 127.0.0.1 
+      when: process_out.stdout != '5'
+  when: node_nums <= (min_cluster_num)
+
+- block:
+    - name: Check if the Druid already exists
+      shell: ps -ef | grep -v grep | grep "org.apache.druid.cli.Main server" | wc -l
+      register: process_out
+    
+    - name: To terminate execution
+      fail:
+       msg: "Druid on node {{ inventory_hostname }} is not started. Please check"
+      run_once: true
+      delegate_to: 127.0.0.1 
+      when: process_out.stdout != '3'
+  when: node_nums > (min_cluster_num) and inventory_hostname in groups['druid'][:2]
+  
+- block:
+    - name: Check if the Druid already exists
+      shell: ps -ef | grep -v grep | grep "org.apache.druid.cli.Main server" | wc -l
+      register: process_out
+    
+    - name: To terminate execution
+      fail:
+       msg: "Druid on node {{ inventory_hostname }} is not started. Please check"
+      run_once: true
+      delegate_to: 127.0.0.1 
+      when: process_out.stdout != '2'
+  when: node_nums > (min_cluster_num) and inventory_hostname not in groups['druid'][:2]  

@@ -1,0 +1,9 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+mariadb:
+  #Used to cache data and index data from tables in the InnoDB storage engine.
+  innodb_buffer_pool_size: 2048

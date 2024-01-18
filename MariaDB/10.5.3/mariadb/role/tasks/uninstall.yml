@@ -1,0 +1,27 @@
+- block: 
+    - name: Stopping and removing {{ container_name }} container
+      docker_container:
+        name: '{{ container_name }}'
+        state: absent
+    
+    - name: Removing old {{ image_name }} image
+      docker_image:
+        name: '{{ image_name }}'
+        tag: '{{ image_tag }}'
+        state: absent
+
+    - name: Stopping and removing exporter container
+      docker_container:
+        name: 'mysqld_exporter'
+        state: absent
+
+    - name: Removing old exporter image
+      docker_image:
+        name: 'mysqld_exporter'
+        tag: 'v1.0'
+        state: absent
+
+    - name: Ansible delete old {{ deploy_dir }}/{{ container_name }}
+      file:
+        path: '{{ deploy_dir }}/{{ container_name }}'
+        state: absent

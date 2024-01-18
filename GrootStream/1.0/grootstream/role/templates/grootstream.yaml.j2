@@ -1,0 +1,21 @@
+grootstream:
+  knowledge_base:
+    - name: tsg_asnlookup
+      type: asnlookup
+      properties:
+        fs_type: hos
+        fs_default_path: http://{{ qgw_api }}:9999/v1/knowledge_base?kb_id=
+      files:
+        - f9f6bc91-2142-4673-8249-e097c00fe1ea
+    - name: tsg_geoiplookup
+      type: geoiplookup
+      properties:
+        fs_type: hos
+        fs_default_path: http://{{ qgw_api }}:9999/v1/knowledge_base?kb_id=
+      files:
+        - 64af7077-eb9b-4b8f-80cf-2ceebc89bea9
+        - 004390bc-3135-4a6f-a492-3662ecb9e289
+  properties:
+    hos.path: http://{{ hos_api }}:9098/hos
+    hos.bucket.name.traffic_file: traffic_file_bucket
+    hos.bucket.name.troubleshooting_file: troubleshooting_file_bucket

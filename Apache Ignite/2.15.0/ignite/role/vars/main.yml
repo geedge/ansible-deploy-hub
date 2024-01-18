@@ -1,0 +1,11 @@
+#镜像名称
+image_name: ignite
+
+#镜像版本号
+image_tag: 2.15.0
+
+#容器名称
+container_name: ignite
+
+#组件版本
+component_version: ignite-2.15.0 

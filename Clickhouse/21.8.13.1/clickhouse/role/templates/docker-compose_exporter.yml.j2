@@ -1,0 +1,20 @@
+version: '3.3'
+
+services:
+  clickhouse_exporter:
+    image: clickhouse_exporter:v2.0
+    container_name: clickhouse_exporter
+    ports:
+      - 9904:9116
+    restart: always
+    command:
+      - -scrape_uri=http://{{ inventory_hostname }}:8123/
+    environment:
+      - CLICKHOUSE_USER=default
+      - CLICKHOUSE_PASSWORD={{ clickhouse_default_pin }}
+    networks:
+      olap:
+        ipv4_address: 172.20.88.10
+networks:
+  olap:
+    external: true

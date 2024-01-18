@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+   druid-master:
+    image: {{ image_name }}:{{ image_tag }}
+    restart: always
+    container_name: {{ container_name }}
+    privileged: true
+    user: root
+    environment:
+      #cluster-data-server,cluster-query-server,cluster-all-server,single-server-small,single-server-medium,single-server-large,single-server-xlarge
+      MODE: {{ startup_mode }}
+    volumes:
+      - "{{ deploy_dir }}/{{ container_name }}/conf:/{{ component_version }}/conf"
+      - "{{ deploy_dir }}/{{ container_name }}/var:/{{ component_version }}/var"
+      - "{{ deploy_dir }}/{{ container_name }}/log:/{{ component_version }}/log"
+    network_mode: "host"
+

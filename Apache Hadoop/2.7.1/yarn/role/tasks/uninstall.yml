@@ -1,0 +1,55 @@
+- block:
+    - name: copy unload_hadoop_yarn.sh to {{ deploy_dir }}/
+      template: 
+        src: 'unload_hadoop_yarn.sh.j2'
+        dest: '{{ deploy_dir }}/unload_hadoop_yarn.sh'
+        force: true
+        mode: 0755
+        
+    - name: unload hadoop
+      shell: cd {{ deploy_dir }} && sh unload_hadoop_yarn.sh
+      
+    - name: Ansible delete {{ deploy_dir }}/unload_hadoop_yarn.sh
+      file:
+        path: "{{ deploy_dir }}/unload_hadoop_yarn.sh"
+        state: absent
+
+    - name: Ansible delete old /etc/profile.d/flink.sh
+      file:
+        path: '/etc/profile.d/flink.sh'
+        state: absent
+        
+    - name: Checking ZooKeeper has yarn nodes
+      shell: "docker exec zookeeper zkCli.sh ls / | grep rmstore | wc -l"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      register: rmstore_zknode
+      
+    - name: Delete Hadoop nodes in ZooKeeper
+      shell: "docker exec zookeeper zkCli.sh rmr /rmstore"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      when: rmstore_zknode.stdout >= '1'
+
+    - name: Checking ZooKeeper has yarn nodes
+      shell: docker exec zookeeper zkCli.sh ls / | grep "yarn-leader-election" | wc -l
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      register: leader_zknode
+      
+    - name: Delete Hadoop nodes in ZooKeeper
+      shell: "docker exec zookeeper zkCli.sh rmr /yarn-leader-election"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      when: leader_zknode.stdout >= '1'
+      
+    - name: Check if the Hadoop service already exists
+      shell: source /etc/profile && jps -l | egrep "org.apache.hadoop.yarn.server.resourcemanager.ResourceManager|org.apache.hadoop.yarn.server.nodemanager.NodeManager|org.apache.hadoop.mapreduce.v2.hs.JobHistoryServer" | wc -l
+      register: check_out
+      
+    - name: To terminate execution
+      fail:
+       msg: "卸载失败，组件可能非本安装部署，请手动卸载后继续安装"
+      run_once: true
+      delegate_to: 127.0.0.1 
+      when: check_out.stdout >= '1'        

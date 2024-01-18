@@ -1,0 +1,31 @@
+- block: 
+    - name: Stopping and removing container
+      docker_container:
+        name: '{{ item }}'
+        state: absent
+      with_items:
+        - ['HMaster']
+        - ['HRegionServer']
+
+    - name: Removing old {{ image_name }} image
+      docker_image:
+        name: '{{ image_name }}'
+        tag: '{{ image_tag }}'
+        state: absent
+
+    - name: Ansible delete old {{ deploy_dir }}/{{ container_name }}
+      file:
+        path: '{{ deploy_dir }}/{{ container_name }}'
+        state: absent
+
+    - name: Checking ZooKeeper has HBase nodes
+      shell: "docker exec -it zookeeper zkCli.sh ls / | grep hbase | wc -l"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      register: has_zknode
+
+    - name: Delete HBase nodes in ZooKeeper
+      shell: "docker exec -it zookeeper zkCli.sh rmr /hbase"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      when: has_zknode.stdout >= '1'

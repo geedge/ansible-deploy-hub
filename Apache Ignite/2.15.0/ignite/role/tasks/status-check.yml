@@ -1,0 +1,17 @@
+- name: Waitting for Kafka running,60s
+  shell: sleep 60
+
+- name: Check if the Kafka already exists
+  shell: ps -ef | grep -v grep | grep kafka.Kafka | wc -l
+  register: process_out
+  
+- name: Check if the Kafka already exists
+  shell: netstat -anlp | egrep "9092|9094|9095" | grep LISTEN | wc -l
+  register: port_out
+
+- name: To terminate execution
+  fail:
+   msg: "Kafka on node {{ inventory_hostname }} is not started. Please check"
+  run_once: true
+  delegate_to: 127.0.0.1 
+  when: process_out.stdout != '1' or port_out.stdout != '3'

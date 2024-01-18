@@ -1,0 +1,17 @@
+version: '3.3'
+
+services:
+  zookeeper-exporter:
+    image: zookeeper_exporter:v1.0
+    container_name: zookeeper_exporter
+    ports:
+      - 9902:9114
+    restart: always
+    command:
+      - {{ inventory_hostname }}:2181
+    networks:
+      olap:
+        ipv4_address: 172.20.88.5
+networks:
+  olap:
+    external: true

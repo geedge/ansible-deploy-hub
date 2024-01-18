@@ -1,0 +1,12 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+ignite:
+  #Running memory of the Nacos.
+  java_opt: '-Xmx1024m -Xms1024m'
+  #Setting region max size equal to physical RAM size(5 GB).
+  maxSize: '#{5L * 1024 * 1024 * 1024}'
+

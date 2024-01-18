@@ -1,0 +1,8 @@
+#hadoop版本
+hadoop_version: hadoop-2.7.1
+
+#数据目录
+hdfs_data_dir: "{{ data_dir }}/{{ hadoop_version }}/data/hadoop"
+
+#jdk版本
+java_version: 1.8.0_73

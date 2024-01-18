@@ -1,0 +1,7 @@
+- hosts: nacos
+  remote_user: root
+  roles:
+   - role
+  vars_files:
+   - role/vars/main.yml
+

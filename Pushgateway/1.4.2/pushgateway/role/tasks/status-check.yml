@@ -1,0 +1,17 @@
+- name: Waitting for Pushgateway running,30s
+  shell: sleep 30
+
+- name: Check if the Pushgateway already exists
+  shell: ps -ef | grep pushgateway |grep -v grep | wc -l
+  register: process_out
+  
+- name: Check if the Pushgateway already exists
+  shell: netstat -anlp | egrep "9091" | grep LISTEN | wc -l
+  register: port_out
+
+- name: To terminate execution
+  fail:
+   msg: "Kafka on node {{ inventory_hostname }} is not started. Please check"
+  run_once: true
+  delegate_to: 127.0.0.1 
+  when: process_out.stdout != '1' or port_out.stdout != '1'

@@ -1,0 +1,13 @@
+- name: Waitting for Zookeeper running,60s
+  shell: sleep 60
+
+- name: Check the zookeeper service status
+  shell: docker exec -it zookeeper zkServer.sh status | egrep "follower|leader|standalone" | wc -l
+  register: check_status
+
+- name: To terminate execution
+  fail:
+   msg: "检测到{{ inventory_hostname }}节点Zookeeper未正常启动；请保留日志反馈，路径：{{ deploy_dir }}/{{ container_name }}/logs"
+  run_once: true
+  delegate_to: 127.0.0.1
+  when: check_status.stdout != '1'

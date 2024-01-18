@@ -1,0 +1,38 @@
+- block:
+    - name: copy unload_hdfs.sh to {{ deploy_dir }}/
+      template: 
+        src: 'unload_hdfs.sh.j2'
+        dest: '{{ deploy_dir }}/unload_hdfs.sh'
+        force: true
+        mode: 0755
+        
+    - name: unload hadoop
+      shell: cd {{ deploy_dir }} && sh unload_hdfs.sh
+      
+    - name: Ansible delete {{ deploy_dir }}/unload_hdfs.sh
+      file:
+        path: "{{ deploy_dir }}/unload_hdfs.sh"
+        state: absent
+        
+    - name: Checking ZooKeeper has Hadoop nodes
+      shell: docker exec zookeeper zkCli.sh ls / | grep -w "hadoop-ha" | wc -l
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      register: has_zknode
+      
+    - name: Delete Hadoop nodes in ZooKeeper
+      shell: "docker exec zookeeper zkCli.sh rmr /hadoop-ha"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      when: has_zknode.stdout >= '1'
+      
+    - name: Check if the Hadoop service already exists
+      shell: source /etc/profile && jps -l | egrep "org.apache.hadoop.hdfs.qjournal.server.JournalNode|org.apache.hadoop.hdfs.tools.DFSZKFailoverController|org.apache.hadoop.hdfs.server.datanode.DataNode|org.apache.hadoop.hdfs.server.namenode.NameNode" | wc -l
+      register: check_out
+      
+    - name: To terminate execution
+      fail:
+       msg: "卸载失败，组件可能非本安装部署，请手动卸载后继续安装"
+      run_once: true
+      delegate_to: 127.0.0.1 
+      when: check_out.stdout >= '1'        

@@ -1,0 +1,87 @@
+<yandex>
+<!--ck集群节点-->
+<clickhouse_remote_servers>
+
+<!--clickhouse query集群节点-->
+<ck_query>
+
+<shard>
+  <!-- Optional. Shard weight when writing data. Default: 1. -->
+  <weight>1</weight>
+  <!-- Optional. Whether to write data to just one of the replicas. Default: false (write data to all replicas). -->
+  <internal_replication>false</internal_replication>
+  <replica>
+    <host>{{ inventory_hostname }}</host>
+    <port>9001</port>
+    <user>default</user>
+    <password>{{ clickhouse_default_pin }}</password>
+  </replica>
+</shard>
+
+</ck_query>
+
+
+<!--clickhouse cluster集群节点-->
+<ck_cluster>
+
+<shard>
+  <!-- Optional. Shard weight when writing data. Default: 1. -->
+  <weight>1</weight>
+  <!-- Optional. Whether to write data to just one of the replicas. Default: false (write data to all replicas). -->
+  <internal_replication>false</internal_replication>
+  <replica>
+    <host>{{ inventory_hostname }}</host>
+    <port>9001</port>
+    <user>default</user>
+    <password>{{ clickhouse_default_pin }}</password>
+  </replica>
+</shard>
+
+</ck_cluster>
+
+
+<!--clickhouse 所有节点-->
+<ck_all>
+
+<shard>
+  <!-- Optional. Shard weight when writing data. Default: 1. -->
+  <weight>1</weight>
+  <!-- Optional. Whether to write data to just one of the replicas. Default: false (write data to all replicas). -->
+  <internal_replication>false</internal_replication>
+  <replica>
+    <host>{{ inventory_hostname }}</host>
+    <port>9001</port>
+    <user>default</user>
+    <password>{{ clickhouse_default_pin }}</password>
+  </replica>
+</shard>
+
+</ck_all>
+	
+</clickhouse_remote_servers>
+
+<zookeeper-servers>
+
+<node index="1">
+  <host>{{ inventory_hostname }}</host>
+  <port>2181</port>
+</node>
+
+<session_timeout_ms>120000</session_timeout_ms>
+</zookeeper-servers>
+
+<networks>
+<ip>::/0</ip>
+</networks>
+
+<!--压缩相关配置-->
+<clickhouse_compression>
+<case>
+<min_part_size>10000000000</min_part_size>
+<min_part_size_ratio>0.01</min_part_size_ratio>
+<method>lz4</method> <!--压缩算法lz4压缩比zstd快, 更占磁盘-->
+</case>
+</clickhouse_compression>
+</yandex>
+
+

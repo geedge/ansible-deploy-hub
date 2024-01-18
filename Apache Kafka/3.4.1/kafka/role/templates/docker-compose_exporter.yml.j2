@@ -1,0 +1,21 @@
+version: '3.3'
+
+services:
+  kafka-exporter:
+    image: kafka_exporter:v2.0
+    container_name: kafka_exporter
+    ports:
+      - 9982:9308
+    restart: always
+    command:
+      - --kafka.server={{ inventory_hostname }}:9094
+      - --sasl.username=admin
+      - --sasl.password=galaxy2019
+      - --sasl.mechanism=plain
+      - --sasl.enabled
+    networks:
+      olap:
+        ipv4_address: 172.20.88.7
+networks:
+  olap:
+    external: true

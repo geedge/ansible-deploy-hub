@@ -1,0 +1,14 @@
+- name: Waitting for Clickhouse running,30s
+  shell: sleep 30
+
+- name: Check the Clickhouse service status
+  shell: clickhouse-client -h {{ inventory_hostname }} --port 9001 -m -u default --password {{ clickhouse_default_pin }} --query "SELECT version();" | grep "21.8.13.1.altinitystable" | wc -l
+  register: check_mode
+
+- name: To terminate execution
+  fail:
+   msg: "检测到 {{ inventory_hostname }} 节点Clickhouse未正常启动；请保留日志反馈，路径：{{ deploy_dir }}/clickhouse/logs"
+  run_once: true
+  delegate_to: 127.0.0.1
+  when: check_mode.stdout != '1'
+

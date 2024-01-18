@@ -1,0 +1,19 @@
+- block:
+    - include: cluster/uninstall.yml
+    - include: cluster/deploy.yml
+    - include: cluster/status-check.yml
+  when: (operation) == "install" and (groups.clickhouse|length) > 1
+
+- block:
+    - include: cluster/uninstall.yml
+  when: (operation) == "uninstall" and (groups.clickhouse|length) > 1
+
+- block:
+    - include: standalone/uninstall.yml
+    - include: standalone/deploy.yml
+    - include: standalone/status-check.yml
+  when: (operation) == "install" and (groups.clickhouse|length) == 1
+
+- block:
+    - include: standalone/uninstall.yml
+  when: (operation) == "uninstall" and (groups.clickhouse|length) == 1

@@ -1,0 +1,223 @@
+- name: Setting node_nums variable
+  set_fact: node_nums="{{groups.hdfs|length}}"
+
+- name: To terminate execution
+  fail:
+    msg: "Fully Distributed Mode at least 3 nodes, please checking configurations/hosts -> hdfs"
+  when: node_nums < 3
+  
+- name: check Jdk version
+  shell: source /etc/profile && java -version 2>&1 | grep {{ java_version }} | wc -l
+  ignore_errors: false
+  register: jdk_out
+
+- name: To terminate execution
+  fail:
+    msg: "JDK is not installed in the target cluster, please check!"
+  when: jdk_out.stdout != '2'
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: create hadoop package path:{{ deploy_dir }}
+  file:
+    state: directory
+    path: '{{ item.path }}'
+  with_items:
+    - { path: '{{ hdfs_data_dir }}' }
+    - { path: '{{ deploy_dir }}' }
+    
+- name: master_ip to ansible variable
+  set_fact: master_ip={{groups.hdfs[0]}}
+  
+- name: slave1_ip to ansible variable
+  set_fact: slave1_ip={{groups.hdfs[1]}}
+  
+- name: slave2_ip to ansible variable
+  set_fact: slave2_ip={{groups.hdfs[2]}}
+
+#解压tar
+- name: unpack hadoop-2.7.1.tar.gz to {{ deploy_dir }}/
+  unarchive: 
+    src: 'files/{{ hadoop_version }}.tar.gz'
+    dest: '{{ deploy_dir }}/'
+
+- name: Copying hadoop config files
+  template: 
+    src: '{{ item.src }}'
+    dest: '{{ deploy_dir }}/{{ hadoop_version }}/{{ item.dest }}'
+    mode: '{{ item.mode }}'
+    backup: false
+  with_items:
+    - { src: 'core-site.xml.j2', dest: 'etc/hadoop/core-site.xml', mode: '0644' }
+    - { src: 'hdfs-site.xml.j2', dest: 'etc/hadoop/hdfs-site.xml', mode: '0644' }
+    - { src: 'mapred-site.xml.j2', dest: 'etc/hadoop/mapred-site.xml', mode: '0644' }
+    - { src: 'slaves.j2', dest: 'etc/hadoop/slaves', mode: '0644' }
+    - { src: 'hadoop-env.sh.j2', dest: 'etc/hadoop/hadoop-env.sh', mode: '0755' }
+    - { src: 'set_hdfs_env.sh.j2', dest: 'bin/set_hdfs_env.sh', mode: '0755' }
+       
+- name: Copying HDFS config to {{ master_ip }}
+  template: 
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0755
+    backup: false
+  with_items:
+    - { src: 'daemonscript/dae-hdfsjournal.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsjournal.sh' }
+    - { src: 'daemonscript/dae-hdfsmaster.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsmaster.sh' }
+    - { src: 'daemonscript/keephdfsmaster.j2', dest: '/etc/init.d/keephdfsmaster' }
+    - { src: 'daemonscript/keephdfsjournal.j2', dest: '/etc/init.d/keephdfsjournal' }  
+    - { src: 'ini_hdfs.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/bin/ini_hdfs.sh' }  
+  run_once: true
+  delegate_to: "{{ master_ip }}"
+
+- name: Copying HDFS config to {{ slave1_ip }}
+  template: 
+    src: 'daemonscript/{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0755
+    backup: yes
+  with_items:
+    - { src: 'dae-hdfsjournal.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsjournal.sh' }
+    - { src: 'dae-hdfsslave.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsslave.sh' }
+    - { src: 'keephdfsslave.j2', dest: '/etc/init.d/keephdfsslave' }
+    - { src: 'keephdfsjournal.j2', dest: '/etc/init.d/keephdfsjournal' }  
+  run_once: true
+  delegate_to: "{{ slave1_ip }}"
+  
+- name: Copying HDFS config to {{ slave2_ip }}
+  template: 
+    src: 'daemonscript/{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0755
+    backup: yes
+  with_items:
+    - { src: 'dae-hdfsjournal.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsjournal.sh' }
+    - { src: 'keephdfsjournal.j2', dest: '/etc/init.d/keephdfsjournal' }  
+  run_once: true
+  delegate_facts: true
+  delegate_to: "{{ slave2_ip }}"
+  
+- name: Copying HDFS config to worker nodes
+  template: 
+    src: 'daemonscript/{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0755
+    backup: yes
+  with_items:
+    - { src: 'dae-hdfsworker.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsworker.sh' }
+    - { src: 'keephdfsworker.j2', dest: '/etc/init.d/keephdfsworker' } 
+  
+- name: set hadoop env
+  shell: cd {{ deploy_dir }}/{{ hadoop_version }}/bin/ && ./set_hdfs_env.sh {{ item.opeation }}
+  with_items:
+    - { opeation: 'chkconfig' }
+    - { opeation: 'journal' }
+
+- name: Waiting for the JournalNode start,sleep 10s
+  shell: sleep 10
+
+- block:
+    - name: checking JournalNode status
+      shell: source /etc/profile && jps | grep JournalNode | grep -v grep | wc -l
+      register: status_out
+
+    - name: checking JournalNode
+      fail:
+        msg: "JournalNode节点启动异常，请登陆{{ inventory_hostname }},保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/*journalnode*"
+      when: status_out.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+  when: inventory_hostname in [master_ip,slave1_ip,slave2_ip]
+      
+- name: Initialization NameNode/ZKFC,Start master NameNode
+  block:
+    - name: initialization hadoop NameNode
+      shell: sh {{ deploy_dir }}/{{ hadoop_version }}/bin/ini_hdfs.sh namenode | grep "yes" | grep -v grep | wc -l
+      register: ini_namenode_out
+    
+    - name: checking namenode init status
+      fail:
+        msg: "namenode 初始化异常,请登陆[{{ master_ip }}],保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/*namenode*"
+      when: ini_namenode_out.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+    
+    - name: initialization hadoop ZKFC
+      shell: sh {{ deploy_dir }}/{{ hadoop_version }}/bin/ini_hdfs.sh zkfc | grep "yes" | grep -v grep | wc -l
+      register: ini_zkfc_out
+    
+    - name: checking hadoop-zk init status
+      fail:
+        msg: "hadoop-zk 初始化异常,请登陆[{{ master_ip }}],保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/"
+      when: ini_zkfc_out.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+     
+    - name: start hadoop Master node
+      shell: cd {{ deploy_dir }}/{{ hadoop_version }}/bin/ && ./set_hdfs_env.sh master
+    
+    - name: Waiting for the Master-namenode start,sleep 20s
+      shell: sleep 20
+    
+    - name: checking {{ master_ip }} NameNode status
+      shell: source /etc/profile && jps | grep NameNode | grep -v grep | wc -l
+      register: master_namenode_status
+      
+    - name: checking master NameNode
+      fail:
+        msg: "NameNode-master未启动,请登陆[{{ master_ip }}],保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/*namenode*"
+      when: master_namenode_status.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+  run_once: true
+  delegate_facts: true
+  delegate_to: "{{ master_ip }}"      
+
+- name: Start slave NameNode  
+  block:  
+    - name: copying {{ master_ip }} NameNode files to Slave
+      shell: "yes | {{ deploy_dir }}/{{ hadoop_version }}/bin/hdfs namenode -bootstrapStandby"
+    
+    - name: start hadoop Slave node
+      shell: cd {{ deploy_dir }}/{{ hadoop_version }}/bin/ && ./set_hdfs_env.sh slave
+      
+    - name: Waiting for the Slave-namenode start,sleep 60s
+      shell: sleep 60  
+      
+    - name: checking {{ slave1_ip }} NameNode status
+      shell: source /etc/profile && jps | grep NameNode | grep -v grep | wc -l
+      register: slave1_namenode_status
+      
+    - name: checking slavel NameNode
+      fail:
+        msg: "NameNode-slave未启动,请登陆[{{ slave1_ip }}],保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/*namenode*"
+      when: slave1_namenode_status.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1   
+  run_once: true
+  delegate_facts: true
+  delegate_to: "{{ slave1_ip }}"   
+
+- name: Start DataNode   
+  block: 
+    - name: start hadoop Worker nodes
+      shell: cd {{ deploy_dir }}/{{ hadoop_version }}/bin/ && ./set_hdfs_env.sh worker
+    
+    - name: Waiting for the DataNode start,sleep 60s
+      shell: sleep 60
+    
+    - name: checking DataNode status
+      shell: source /etc/profile && jps | grep DataNode | grep -v grep | wc -l
+      register: datanode_status
+    
+    - name: checking DataNode
+      fail:
+        msg: "DataNode未启动,请登陆[{{ inventory_hostname }}],保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/*datanode*"
+      when: datanode_status.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+
+- name: delete {{ deploy_dir }}/hadoop-2.7.1.tar.gz
+  file:
+    path: "{{ deploy_dir }}/{{ hadoop_version }}.tar.gz"
+    state: absent

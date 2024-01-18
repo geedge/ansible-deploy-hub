@@ -1,0 +1,9 @@
+-server
+{{ druid.historical.java_opts }}
+-XX:MaxDirectMemorySize={{ druid.historical.MaxDirectMemorySize }}
+-Duser.timezone=UTC
+-Dfile.encoding=UTF-8
+-Djava.io.tmpdir=var/tmp
+-Dlogfile.name=historical
+-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
+

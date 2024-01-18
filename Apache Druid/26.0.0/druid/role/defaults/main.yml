@@ -1,0 +1,44 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+druid:
+  common:
+    druid.zk.service.host: '{% for dev_info in groups.zookeeper -%}{% if loop.last -%}{{dev_info}}:2181{%- else %}{{dev_info}}:2181,{%- endif %}{%- endfor %}'
+    druid.metadata.storage.connector.connectURI: 'jdbc:mysql://{{ vrrp_instance.default.virtual_ipaddress }}:3306/druid'
+    druid.metadata.storage.connector.password: '{{ mariadb_default_pin }}'
+  broker:
+    #Running memory of the Druid-Broker.
+    java_opts: -Xmx1024m -Xms1024m
+    #Worker tasks also use off-heap ("direct") memory. Set the amount of direct memory available (-XX:MaxDirectMemorySize) to at least (druid.processing.numThreads + 1) * druid.processing.buffer.sizeBytes
+    MaxDirectMemorySize: 512m
+    #This specifies a buffer size (less than 2GiB), for the storage of intermediate results
+    druid.processing.buffer.sizeBytes: 50000000
+    #The number of direct memory buffers available for merging query results.
+    druid.processing.numMergeBuffers: 4
+    #The number of processing threads to have available for parallel processing of segments.
+    druid.processing.numThreads: 5
+  coordinator:
+    #Running memory of the Druid-Coordinator.
+    java_opts: -Xmx1024m -Xms1024m
+  historical:
+    #Running memory of the Druid-Historical.
+    java_opts: -Xmx1024m -Xms1024m
+    #The size of the process's temporary cache data on disk
+    druid.segmentCache.locations: 300000000000
+    #Worker tasks also use off-heap ("direct") memory. Set the amount of direct memory available (-XX:MaxDirectMemorySize) to at least (druid.processing.numThreads + 1) * druid.processing.buffer.sizeBytes
+    MaxDirectMemorySize: 512m
+    #This specifies a buffer size (less than 2GiB), for the storage of intermediate results
+    druid.processing.buffer.sizeBytes: 50000000
+    #The number of direct memory buffers available for merging query results.
+    druid.processing.numMergeBuffers: 4
+    #The number of processing threads to have available for parallel processing of segments.
+    druid.processing.numThreads: 5
+  middlemanager:
+    #Running memory of the Druid-Middlemanager.
+    java_opts: -Xmx1024m -Xms1024m
+    druid.indexer.fork.property.druid.processing.numMergeBuffers: 2
+    druid.indexer.fork.property.druid.processing.buffer.sizeBytes: 20000000
+    druid.indexer.fork.property.druid.processing.numThreads: 1

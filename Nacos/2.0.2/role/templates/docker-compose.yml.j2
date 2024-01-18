@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  nacos:
+    image: {{ image_name }}:{{ image_tag }}
+    restart: always
+    container_name: {{ container_name }}
+    network_mode: "host"
+    environment:
+      MODE: cluster
+      JVM_OPTIONS: {{ nacos.java_opt }}
+    volumes:
+      - "{{ deploy_dir }}/{{ container_name }}/conf:/opt/nacos/conf"
+      - "{{ deploy_dir }}/{{ container_name }}/logs:/opt/nacos/logs"

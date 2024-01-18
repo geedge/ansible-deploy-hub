@@ -1,0 +1,9 @@
+#镜像名称
+image_name: mariadb
+
+#镜像版本号
+image_tag: 10.5.3
+
+#容器名称
+container_name: mariadb
+

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+source /etc/profile
+
+docker exec -it hbase hbase shell <<EOF
+
+add_rsgroup 'important'
+
+move_servers_rsgroup 'important',['{{ hostvars[groups.hbase[0]]['ansible_hostname'] }}:16020']
+
+move_servers_rsgroup 'important',['{{ hostvars[groups.hbase[1]]['ansible_hostname'] }}:16020']
+
+flush 'tsg:report_result'
+
+move_tables_rsgroup 'important',['tsg:report_result']
+
+flush 'tsg_galaxy:job_result'
+
+move_tables_rsgroup 'important',['tsg_galaxy:job_result']
+
+
+EOF
+

@@ -1,0 +1,4 @@
+{% set combined_group =  groups.yarn | union(groups.hdfs) %}
+{% for dev_info in combined_group %}
+{{dev_info}}
+{% endfor %}

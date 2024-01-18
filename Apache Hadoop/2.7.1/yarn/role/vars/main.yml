@@ -1,0 +1,15 @@
+#Hadoop版本
+hadoop_version: hadoop-2.7.1
+
+#Flink版本
+flink_version: flink-1.13.1
+
+#Jdk版本
+java_version: 1.8.0_73
+
+#数据目录
+hdfs_data_dir: "{{ data_dir }}/{{ hadoop_version }}/data/hadoop"
+
+#大于5台的集群，前两台启动ResourceManager，其余启动NodeManager
+#小于5台的集群，前两台启动ResourceManager，每台都启动NodeManager
+cluster_limit: "5"

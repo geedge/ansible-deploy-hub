@@ -1,0 +1,93 @@
+- name: Setting node_nums variable
+  set_fact: node_nums="{{groups.druid|length}}"
+
+- block:
+    - name: To terminate execution
+      fail:
+        msg: "Druid Standanloe mode at max 1 nodes,please checking configurations/hosts -> druid"
+      when: node_nums != '1'
+
+    - name: Check the Zookeeper status
+      shell: netstat -anlp | egrep "2181" | grep LISTEN | wc -l
+      register: port_out
+      delegate_to: "{{ groups.zookeeper[0] }}"
+    
+    - name: To terminate execution
+      fail:
+       msg: "Port 2181 of the zookeeper node is not monitored. The status may be abnormal"
+      run_once: true
+      delegate_to: 127.0.0.1
+      when: port_out.stdout != '1'
+    
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/{{ item.dir }}'
+  with_items:
+    - { dir: 'var' }
+    - { dir: 'log' }  
+    - { dir: 'monitor' }  
+
+- name: Copying config
+  unarchive:
+    src: 'files/conf.zip'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Loading Image    
+    
+- name: copying druid config files
+  template: 
+    src: '{{ item.src }}'
+    dest: '{{ deploy_dir }}/{{ container_name }}/conf/druid/single-server/medium/{{ item.dest }}'
+    backup: false
+  with_items:
+    - { src: 'common.runtime.properties.j2', dest: '_common/common.runtime.properties' }
+    - { src: 'broker_runtime.j2', dest: 'broker/runtime.properties' }
+    - { src: 'broker_jvm.j2', dest: 'broker/jvm.config' }
+    - { src: 'historical_runtime.j2', dest: 'historical/runtime.properties' }
+    - { src: 'historical_jvm.j2', dest: 'historical/jvm.config' }
+    - { src: 'middleManager_jvm.j2', dest: 'middleManager/jvm.config' }
+    - { src: 'middleManager_runtime.properties.j2', dest: 'middleManager/runtime.properties' }
+    - { src: 'coordinator_jvm.j2', dest: 'coordinator-overlord/jvm.config' }    
+    - { src: 'router_runtime.properties.j2', dest: 'router/runtime.properties' }
+ 
+- name: Create a new database with name {{ druid_database }}
+  shell: mysql -uroot -p{{ mariadb_default_pin }} -P3306 -h{{ groups.mariadb[0] }} -e "create database {{ druid_database }} default character set utf8mb4 collate utf8mb4_general_ci;"
+  run_once: true
+  delegate_to: "{{ groups.mariadb[0] }}"
+  
+- name: Setting startup_mode variable
+  set_fact: startup_mode="single-server-medium"
+
+- name: Copying Druid docker-compose
+  template:
+    src: 'docker-compose.yml.j2'
+    dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml'
+    mode: 0644
+  notify:
+    - Loading Image
+    - Start Container
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/monitor
+  copy:
+    src: 'files/druid_exporter-1.0.0.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/monitor/'
+    force: true
+  notify:
+    - Loading Exporter Image
+
+- name: Config exporter config files
+  template:
+    src: 'docker-compose_exporter.yml.j2'
+    dest: '{{ deploy_dir }}/{{ container_name }}/monitor/docker-compose.yml'
+    mode: 0644
+  notify:
+    - Start Exporter Container
+
+- meta: flush_handlers  

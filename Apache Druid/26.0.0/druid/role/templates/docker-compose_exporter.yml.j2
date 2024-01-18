@@ -1,0 +1,17 @@
+version: '3.3'
+
+services:
+  druid_exporter:
+    image: druid_exporter:1.0.0
+    container_name: druid_exporter
+    restart: always
+    ports:
+      - 9903:9903
+    environment:
+      JVM_MEM: "-Xmx1024m -Xms128m"
+    networks:
+      olap:
+        ipv4_address: 172.20.88.11
+networks:
+  olap:
+    external: true

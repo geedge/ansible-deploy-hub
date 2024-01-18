@@ -1,0 +1,56 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+hadoop:
+  namenode:
+    #Running memory of the Hadoop Namenode.
+    java_opt: '-Xmx1024m -Xms1024m'
+    #The number of Namenode RPC server threads that listen to requests from clients.
+    dfs.namenode.handler.count: 30
+  datanode:
+    #Running memory of the Hadoop Datanode.
+    java_opt: '-Xmx1024m -Xms1024m'
+    #The number of server threads for the datanode.
+    dfs.datanode.handler.count: 40    
+  journalnode:
+    #Running memory of the Hadoop JournalNode.
+    java_opt: '-Xmx1024m -Xms1024m'
+  zkfc:  
+    #Running memory of the Hadoop DFSZKFailoverController.
+    java_opt: '-Xmx1024m -Xms1024m'
+  yarn: 
+    resourcemanager:
+      #Running memory of the Hadoop ResourceManager.
+      java_opt: '-Xmx1024m -Xms1024m'
+    nodemanager:
+      #Running memory of the Hadoop NodeManager.
+      java_opt: '-Xmx1024m -Xms1024m'
+      #Amount of physical memory, in MB, that can be allocated for containers.
+      yarn.nodemanager.resource.memory-mb: 16384
+      #The maximum allocation for every container request at the RM in MBs.
+      yarn.scheduler.maximum-allocation-mb: 16384
+      #Number of vcores that can be allocated for containers. This is used by the RM scheduler when allocating resources for containers.
+      yarn.nodemanager.resource.cpu-vcores: 48
+      #The maximum allocation for every container request at the RM in terms of virtual CPU cores.
+      yarn.scheduler.maximum-allocation-vcores: 48
+
+flink:
+  #Total Process Memory size for the JobManager.
+  jobmanager.memory.process.size: 1024M
+  #Total Process Memory size for the TaskExecutors.
+  taskmanager.memory.process.size: 2048M
+  #This is the size of off-heap memory managed for sorting, hash tables, caching of intermediate results and state backend.
+  taskmanager.memory.managed.size: 128M
+  #Framework Off-Heap Memory size for TaskExecutors. This is the size of off-heap memory reserved for TaskExecutor framework
+  taskmanager.memory.framework.off-heap.size: 128M
+  #JVM Metaspace Size for the TaskExecutors.
+  taskmanager.memory.jvm-metaspace.size: 256M
+  #Max Network Memory size for TaskExecutors. Network Memory is off-heap memory reserved for ShuffleEnvironment.
+  taskmanager.memory.network.max: 256M
+  #The number of parallel operator or user function instances that a single TaskManager can run.
+  #This value is typically proportional to the number of physical CPU cores that the TaskManager's machine has (e.g., equal to the number of cores, or half the number of cores).
+  taskmanager.numberOfTaskSlots: 1
+

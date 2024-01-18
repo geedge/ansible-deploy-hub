@@ -1,0 +1,23 @@
+#镜像名称
+image_name: druid
+
+#镜像版本号
+image_tag: 26.0.0
+
+#容器名称
+container_name: druid
+
+#组件版本
+component_version: apache-druid-26.0.0
+
+#最小集群数量
+min_cluster_num: '3'
+
+#mysql数据库名称
+druid_database: druid
+
+#集群模式下需要用到的hdfs配置文件
+hadoop_config_files:
+  - { filename: 'hdfs-site.xml' }
+  - { filename: 'core-site.xml' }
+

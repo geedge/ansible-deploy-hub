@@ -1,0 +1,49 @@
+- block:
+    - name: Stopping and removing exporter container
+      docker_container:
+        name: 'clickhouse_exporter'
+        state: absent
+
+    - name: Removing old exporter image
+      docker_image:
+        name: 'clickhouse_exporter'
+        tag: 'v2.0'
+        state: absent
+    
+    - name: Copying unload_ck.sh to {{ deploy_dir }}/
+      template: 
+        src: 'unload_ck.sh.j2'
+        dest: '{{ deploy_dir }}/unload_ck.sh'
+        force: true
+        mode: 0755
+        
+    - name: Uninstalling ClickHouse
+      shell: cd {{ deploy_dir }} && sh unload_ck.sh
+      
+    - name: Ansible delete {{ deploy_dir }}/unload_ck.sh
+      file:
+        path: "{{ deploy_dir }}/unload_ck.sh"
+        state: absent
+        
+    - name: Checking ZooKeeper has Clickhouse nodes
+      shell: "docker exec zookeeper zkCli.sh ls / | grep clickhouse | wc -l"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      register: has_zknode
+      
+    - name: Delete Clickhouse nodes in ZooKeeper
+      shell: "docker exec zookeeper zkCli.sh rmr /clickhouse"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      when: has_zknode.stdout >= '1'
+      
+    - name: Checking if the Clickhouse service already exists
+      shell: rpm -qa | grep clickhouse | wc -l
+      register: check_out
+      
+    - name: To terminate execution
+      fail:
+       msg: "Uninstalling ClickHouse fails.Please uninstall manually with yum remove"
+      run_once: true
+      delegate_to: 127.0.0.1 
+      when: check_out.stdout >= '1'        

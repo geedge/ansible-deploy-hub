@@ -1,0 +1,11 @@
+#镜像名称
+image_name: zookeeper
+
+#镜像版本号
+image_tag: 3.5.9
+
+#容器名称
+container_name: zookeeper
+
+#组件版本
+component_version: zookeeper-3.5.9

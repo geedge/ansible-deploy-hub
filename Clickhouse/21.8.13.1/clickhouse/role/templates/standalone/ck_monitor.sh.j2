@@ -1,0 +1,28 @@
+#!/bin/bash
+
+CK_USER="default"
+CK_PIN="{{ clickhouse_default_pin }}"
+CK_MONITOR_PROM_FILE="{{ deploy_dir }}/node-exporter/prom/ck_monitor.prom"
+CK_STATUS=`ps -ef |grep "clickhouse-server/config.xml" | grep -v grep | wc -l`
+
+if [ $CK_STATUS -eq "1" ];then
+echo "clickhouse_up 1" > $CK_MONITOR_PROM_FILE
+else
+echo "clickhouse_up 0" > $CK_MONITOR_PROM_FILE
+fi
+
+current1=`date "+%Y-%m-%d %H:%M:%S"`
+startDate=`date -d "${current1}" +%s`
+pcount=`docker exec -it clickhouse clickhouse-client -h {{ inventory_hostname }} --port 9001 -m -u $CK_USER --password $CK_PIN --max_execution_time=100 --query="select count(*) from system.processes" `
+
+current2=`date "+%Y-%m-%d %H:%M:%S"`
+endDate=`date -d "${current2}" +%s`
+diff=`expr $endDate - $startDate`
+
+mcount=`docker exec -it clickhouse clickhouse-client -h {{ inventory_hostname }} --port 9001 -m -u $CK_USER --password $CK_PIN --max_execution_time=100 --query="select count(*) from system.merges" `
+
+
+echo ck_processes_count $pcount >> $CK_MONITOR_PROM_FILE
+echo ck_merges_count $mcount >> $CK_MONITOR_PROM_FILE
+echo ck_connect_time $diff >> $CK_MONITOR_PROM_FILE
+

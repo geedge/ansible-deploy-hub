@@ -1,0 +1,14 @@
+- name: Check if the MariaDB already exists
+  shell: ps -ef | grep -v mysqld_exporter | grep -v grep | grep mysqld | wc -l
+  register: process_out
+  
+- name: Check if the MariaDB already exists
+  shell: netstat -anlp | egrep "3306" | grep LISTEN | wc -l
+  register: port_out
+
+- name: To terminate execution
+  fail:
+   msg: "MariaDB on node {{ inventory_hostname }} is not started. Please check"
+  run_once: true
+  delegate_to: 127.0.0.1 
+  when: process_out.stdout != '1' or port_out.stdout != '1'

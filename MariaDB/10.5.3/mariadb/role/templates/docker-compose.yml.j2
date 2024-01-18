@@ -1,0 +1,15 @@
+version: "3.7"
+
+services:
+  mariadb:
+    image: {{ image_name }}:{{ image_tag }}
+    container_name: {{ container_name }}
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD={{ mariadb_default_pin }}
+    volumes:
+      - {{ deploy_dir }}/{{ container_name }}/data:/opt/mariadb/data
+      - {{ deploy_dir }}/{{ container_name }}/logs:/opt/mariadb/logs
+      - {{ deploy_dir }}/{{ container_name }}/config/my.cnf:/etc/mysql/my.cnf
+    network_mode: "host"
+

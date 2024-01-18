@@ -1,0 +1,79 @@
+#!/bin/bash
+
+source /etc/profile
+
+function killService(){
+keeppath='/etc/init.d/keepyarnhistory'
+if [ -x $keeppath ];then
+service keepyarnhistory stop
+chkconfig keepyarnhistory off
+systemctl daemon-reload
+rm -rf /etc/init.d/keepyarnhistory
+fi
+
+keeppath='/etc/init.d/keepyarnmaster'
+if [ -x $keeppath ];then
+service keepyarnmaster stop
+chkconfig keepyarnmaster off
+systemctl daemon-reload
+rm -rf /etc/init.d/keepyarnmaster
+fi
+
+keeppath='/etc/init.d/keepyarnworker'
+if [ -x $keeppath ];then
+service keepyarnworker stop
+chkconfig keepyarnworker off
+systemctl daemon-reload
+rm -rf /etc/init.d/keepyarnworker
+fi
+}
+
+function killPid(){
+livenum=`jps -l | egrep -w "org.apache.hadoop.yarn.server.resourcemanager.ResourceManager" | grep -v grep |wc -l`
+if [ $livenum -ne 0 ];then
+keeppid=`jps -l |egrep -w "org.apache.hadoop.yarn.server.resourcemanager.ResourceManager" | awk '{print $1}'`
+kill -9 $keeppid
+fi
+
+livenum=`jps -l | egrep -w "org.apache.hadoop.yarn.server.nodemanager.NodeManager" | grep -v grep |wc -l`
+if [ $livenum -ne 0 ];then
+keeppid=`jps -l |egrep -w "org.apache.hadoop.yarn.server.nodemanager.NodeManager" | awk '{print $1}'`
+kill -9 $keeppid
+fi
+
+livenum=`jps -l | egrep -w "org.apache.hadoop.mapreduce.v2.hs.JobHistoryServer" | grep -v grep |wc -l`
+if [ $livenum -ne 0 ];then
+keeppid=`jps -l |egrep -w "org.apache.hadoop.mapreduce.v2.hs.JobHistoryServer" | awk '{print $1}'`
+kill -9 $keeppid
+fi
+}
+
+function drop_folder(){
+FOLDER_NAME=$1
+
+if [ -d "$FOLDER_NAME" ];then
+  rm -rf $FOLDER_NAME
+fi
+}
+
+function drop_file(){
+FILE_NAME=$1
+
+if [ -f "$FILE_NAME" ];then
+  rm -rf $FILE_NAME
+fi
+}
+
+killService
+sleep 15
+killPid
+
+HAS_HDFS=`jps -l | egrep "org.apache.hadoop.hdfs.qjournal.server.JournalNode|org.apache.hadoop.hdfs.tools.DFSZKFailoverController|org.apache.hadoop.hdfs.server.datanode.DataNode|org.apache.hadoop.hdfs.server.namenode.NameNode" | wc -l`
+if [ $HAS_HDFS -eq "0" ];then
+
+drop_folder {{ deploy_dir }}/{{ hadoop_version }}
+drop_folder {{ deploy_dir }}/hadoop
+drop_folder {{ data_dir }}/hadoop
+drop_file /etc/profile.d/hadoop.sh
+
+fi

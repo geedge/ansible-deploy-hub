@@ -1,0 +1,10 @@
+- block:
+    - name: Ansible delete old /etc/profile.d/groot-stream.sh
+      file:
+        path: '/etc/profile.d/groot-stream.sh'
+        state: absent
+        
+    - name: Ansible delete old {{ deploy_dir }}/{{ groot_stream_version }}
+      file:
+        path: '{{ deploy_dir }}/{{ groot_stream_version }}'
+        state: absent          

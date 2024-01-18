@@ -1,0 +1,23 @@
+#镜像名称
+image_name: kafka
+
+#镜像版本号
+image_tag: 2.12-3.4.1
+
+#容器名称
+container_name: kafka
+
+#组件版本
+component_version: kafka_2.12-3.4.1 
+
+#备份目录
+backup_path: "{{ deploy_dir }}/backup/platform/{{ old_version }}/{{ container_name }}"
+
+#待备份的文件
+backup_items:
+  - "{{ deploy_dir }}/{{ container_name }}/config"
+  - "{{ deploy_dir }}/{{ container_name }}/docker-compose.yml"
+
+#平台版本对应镜像的sha256
+version_sha256_items:
+  "1.0.0": "d91a3183b1f625ab57829db7ffb51f53671e4c2b4c19d3b8511dbb8601593611"

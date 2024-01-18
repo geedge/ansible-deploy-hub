@@ -1,0 +1,15 @@
+#!/bin/bash
+
+PORT_CHECK=$(netstat -anlp | grep 3306 | grep LISTEN | grep mysqld | grep -v grep | wc -l)
+
+if [[ $PORT_CHECK -eq 0 ]];then
+  echo "`date "+%Y-%m-%d %H:%M:%S"` - Mariadb 端口未监听，服务异常" >> /etc/keepalived/keepalived_check.log
+  exit 1
+fi
+
+SQL_CHECK=`mysql -h{{inventory_hostname}} -utsg_query -p{{mariadb_query_pin}} -e "SELECT 'ok' AS OK;"`
+
+if [[ $? -ne '0' ]];then
+  echo "`date "+%Y-%m-%d %H:%M:%S"` - Mariadb SQL执行失败，服务状态异常" >> /etc/keepalived/keepalived_check.log
+  exit 1
+fi

@@ -1,0 +1,17 @@
+version: '3'
+services:
+   mysql_exporter:
+    image: mysqld_exporter:v1.0
+    container_name: mysqld_exporter
+    restart: always
+    ports:
+      - 9911:9104
+    hostname: mysqld_exporter
+    environment:
+      - DATA_SOURCE_NAME=tsg_query:{{ mariadb_query_pin }}@({{ inventory_hostname }}:3306)/
+    networks:
+      olap:
+        ipv4_address: 172.20.88.6
+networks:
+  olap:
+    external: true

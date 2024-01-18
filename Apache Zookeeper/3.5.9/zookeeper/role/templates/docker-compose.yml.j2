@@ -1,0 +1,16 @@
+version: '2'
+
+services:
+  zookeeper:
+    image: {{ image_name }}:{{ image_tag }}
+    restart: always
+    container_name: zookeeper
+    ports:
+    - 2181:2181
+    environment:
+      ZOOKEEPER_JVM_MEM: "{{ zookeeper.java_opts }}"
+    volumes:
+    - "{{ deploy_dir }}/zookeeper/conf/zoo.cfg:/opt/{{ component_version }}/conf/zoo.cfg"
+    - "{{ deploy_dir }}/zookeeper/data:/opt/{{ component_version }}/data"
+    - "{{ deploy_dir }}/zookeeper/logs:/opt/{{ component_version }}/logs"
+    network_mode: "host"

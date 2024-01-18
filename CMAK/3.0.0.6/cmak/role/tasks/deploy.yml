@@ -1,0 +1,34 @@
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/conf'
+    
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/kafka_client_jaas.conf'
+    dest: '{{ deploy_dir }}/{{ container_name }}/conf/kafka_client_jaas.conf'
+    force: true
+
+- name: Create CMAK in zookeeper nodes
+  shell: docker exec zookeeper zkCli.sh create /kafka-manager "" && docker exec zookeeper zkCli.sh create /kafka-manager/mutex "" && docker exec zookeeper zkCli.sh create /kafka-manager/mutex/locks "" && docker exec zookeeper zkCli.sh create /kafka-manager/mutex/leases ""
+  run_once: true
+  delegate_to: "{{ groups.zookeeper[0] }}"
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Loading Image
+
+- name: Copying Kafka config files
+  template:
+    src: 'docker-compose.yml.j2'
+    dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml'
+    mode: 0644
+  notify:
+    - Loading Image
+    - Start Container
+
+- meta: flush_handlers

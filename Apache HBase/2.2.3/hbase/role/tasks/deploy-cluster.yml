@@ -1,0 +1,88 @@
+- name: Setting node_nums variable
+  set_fact: node_nums="{{groups.hbase|length}}"
+
+- name: To terminate execution
+  fail:
+    msg: "HBase Cluster mode at least 3 nodes,please checking configurations/hosts -> hbase"
+  when: node_nums < 3
+
+- name: Checking Hadoop DataNode status
+  shell: source /etc/profile && hadoop dfsadmin -report | grep "Live datanodes" | grep -E -o "[0-9]"
+  async: 10
+  register: datanode_out
+  run_once: true
+  delegate_to: "{{ groups.hdfs[0] }}"
+
+- name: Checking Hadoop NameNode status
+  shell: source /etc/profile && hadoop dfsadmin -report |grep 50010  | wc -l
+  async: 10
+  register: namenode_out
+  run_once: true
+  delegate_to: "{{ groups.hdfs[0] }}"
+
+- name: To terminate execution
+  fail:
+    msg: "If the dependency test fails, check whether the Hadoop cluster is normal"
+  when: datanode_out.stdout <= '1' and namenode_out.stdout <= '1'  
+
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/{{ item.dir }}'
+  with_items:
+    - { dir: 'logs' }
+    - { dir: 'data' }
+    - { dir: 'conf' }
+    - { dir: 'init' }
+    
+- name: Unarchiving phoenix and conf
+  unarchive:
+    src: 'files/phoenix-hbase-2.2-5.1.2-bin.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: yes    
+  with_items:
+    - { file_name: 'phoenix-hbase-2.2-5.1.2-bin.tar' }
+    - { file_name: 'conf.zip' }
+    
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Loading Image
+
+- name: Fetching Hadoop config files to /tmp
+  ansible.builtin.fetch:
+    src: "{{ deploy_dir }}/hadoop-2.7.1/etc/hadoop/{{ item.filename }}"
+    dest: "/tmp/"
+    flat: yes
+  loop: "{{ hadoop_config_files }}"
+  run_once: true
+  delegate_to: "{{ groups.hdfs[0] }}"
+
+- name: Copying Hadoop config files to other nodes
+  ansible.builtin.copy:
+    src: "/tmp/{{ item.filename }}"
+    dest: "{{ deploy_dir }}/{{ container_name }}/conf/"
+  loop: "{{ hadoop_config_files }}"
+    
+- name: Copying HBase config files
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: '{{ item.mode }}'
+  with_items:
+    - { src: 'hbase-site.xml.j2', dest: '{{ deploy_dir }}/{{ container_name }}/phoenix-hbase-2.2-5.1.2-bin/bin/hbase-site.xml', mode: '0644' }
+    - { src: 'startsql.sh.j2', dest: '{{ deploy_dir }}/{{ container_name }}/phoenix-hbase-2.2-5.1.2-bin/bin/startsql.sh', mode: '0755' }
+    - { src: 'hbase-site.xml.j2', dest: '{{ deploy_dir }}/{{ container_name }}/conf/hbase-site.xml', mode: '0644' }
+    - { src: 'regionservers.j2', dest: '{{ deploy_dir }}/{{ container_name }}/conf/regionservers', mode: '0644' }
+    - { src: 'backup-masters.j2', dest: '{{ deploy_dir }}/{{ container_name }}/conf/backup-masters', mode: '0644' }
+    - { src: 'hbase-env.sh.j2', dest: '{{ deploy_dir }}/{{ container_name }}/conf/hbase-env.sh', mode: '0755' }
+    - { src: 'rsgroup.sh.j2', dest: '{{ deploy_dir }}/{{ container_name }}/init/rsgroup.sh', mode: '0755' }
+    - { src: 'docker-compose.yml.j2', dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml', mode: '0644' }
+  notify:
+    - Loading Image
+    - Start Container
+  
+- meta: flush_handlers

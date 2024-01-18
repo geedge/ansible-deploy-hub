@@ -1,0 +1,15 @@
+#镜像名称
+image_name: hbase
+
+#镜像版本号
+image_tag: 2.2.3-alp-2
+
+#容器名称
+container_name: hbase
+
+#组件版本
+component_version: hbase-2.2.3 
+
+hadoop_config_files:
+  - { filename: 'hdfs-site.xml' }
+  - { filename: 'core-site.xml' }

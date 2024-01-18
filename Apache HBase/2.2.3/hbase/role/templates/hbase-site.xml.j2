@@ -1,0 +1,274 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+/**
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<configuration>
+{% if groups.hbase | length > 1 %}
+  <property>
+      <name>hbase.rootdir</name>
+      <value>hdfs://ns1/hbase</value>
+  </property>
+{% elif groups.hbase | length == 1 %}
+  <property>
+      <name>hbase.rootdir</name>
+      <value>/opt/hbase-2.2.3/data</value>
+  </property>
+{% endif %}
+
+  <property>
+      <name>hbase.cluster.distributed</name>
+      <value>true</value>
+  </property>
+
+{% if groups.hbase | length > 1 %}
+  <property>
+    <name>hbase.zookeeper.quorum</name>
+{% for dev_info in groups.zookeeper -%}
+ {% if loop.last -%}
+{{dev_info}}</value>
+ {% elif loop.first %}
+    <value>{{dev_info}},
+ {%- else %}
+{{dev_info}},
+ {%- endif %}
+{%- endfor %}
+  </property>
+
+{% elif groups.hbase | length == 1 %}
+  <property>
+    <name>hbase.zookeeper.quorum</name>
+    <value>{{inventory_hostname}}</value>
+  </property>
+
+{% endif %}
+  <property>
+    <name>hbase.zookeeper.property.clientPort</name>
+    <value>2181</value>
+  </property>
+
+  <property> 
+    <name>hbase.master.info.port</name>
+    <value>60010</value> 
+  </property> 
+
+  <property>
+    <name>hbase.server.keyvalue.maxsize</name>
+    <value>5368709120</value>
+  </property>
+
+  <property>
+    <name>zookeeper.znode.parent</name>
+    <value>/hbase</value>
+  </property>
+  
+  <property>
+    <name>hbase.rpc.timeout</name>
+    <value>300000</value>
+  </property>
+
+  <property>
+    <name>zookeeper.session.timeout</name>
+    <value>300000</value>
+  </property>
+
+  <!--小于该值的文件将在mob compaction中合并-->
+  <property>
+     <name>hbase.mob.compaction.mergeable.threshold</name>     
+     <value>1342177280</value> 
+  </property>
+
+  <property>
+    <name>hbase.mob.file.cache.size</name>
+    <value>1000</value>
+  </property>
+
+  <!--mob cache回收缓存周期-->
+  <property>
+    <name>hbase.mob.cache.evict.period</name>
+    <value>3600</value>
+  </property>
+
+  <!--mob cache回收之后cache中保留文件个数比例，cache数量超过hbase.mob.file.cache.size会回收-->
+  <property>
+    <name>hbase.mob.cache.evict.remain.ratio</name>
+    <value>0.5f</value>
+  </property>
+  
+  <!--开启mob-->
+  <property>
+    <name>hfile.format.version</name>
+    <value>3</value>
+  </property>
+
+  <property> 
+    <name>hbase.hregion.memstore.flush.size</name> 
+    <value>534217728</value> 
+  </property>
+
+  <!-- flush线程数 -->
+  <property>
+      <name>hbase.hstore.flusher.count</name>
+      <value>8</value>
+  </property>
+
+  <property> 
+    <name>hbase.regionserver.global.memstore.size.lower.limit</name> 
+    <value>0.95</value> 
+  </property> 
+
+  <property>
+    <name>hbase.regionserver.global.memstore.size</name>
+    <value>0.45</value>
+  </property>
+
+  <property>
+    <name>hfile.block.cache.size</name>
+    <value>0.3</value>
+  </property>
+
+  <property> 
+    <name>hbase.hregion.memstore.block.multiplier</name> 
+    <value>10</value>
+  </property> 
+  
+  <property>
+    <name>hbase.ipc.server.max.callqueue.length</name>
+    <value>1073741824</value>
+  </property>
+
+  <property>
+    <name>hbase.regionserver.handler.count</name>
+    <value>{{ hbase.regionserver['hbase.regionserver.handler.count'] }}</value>
+    <description>Count of RPC Listener instances spun up on RegionServers.
+    Same property is used by the Master for count of master handlers.</description>
+  </property>
+
+  <property>
+    <name>hbase.zookeeper.property.maxClientCnxns</name>
+    <value>1000</value>
+  </property>
+
+  <property>
+    <name>hbase.ipc.max.request.size</name>
+    <value>1173741824</value>
+  </property>
+
+  <property>
+    <name>hbase.hstore.blockingWaitTime</name>
+    <value>30000</value>
+  </property>
+  <property>
+    <name>hbase.hstore.blockingStoreFiles</name>
+    <value>100</value>
+  </property>
+
+  <!--split参数-->
+  <property>
+　　<name>hbase.hregion.max.filesize</name>
+　　<value>{{ hbase.regionserver['hbase.hregion.max.filesize'] }}</value>
+  </property>
+
+  <property>
+    <name>hbase.regionserver.regionSplitLimit</name>
+    <value>1000</value>
+  </property>
+
+<!-- phoenix -->
+  <property>
+     <name>phoenix.schema.isNamespaceMappingEnabled</name>
+     <value>true</value>
+  </property>
+  <property>
+    <name>phoenix.schema.mapSystemTablesToNamespace</name>
+    <value>true</value>
+  </property>
+
+<!-- RsGroup -->  
+  <property>
+    <name>hbase.coprocessor.master.classes</name>
+    <value>org.apache.hadoop.hbase.rsgroup.RSGroupAdminEndpoint</value>
+  </property>
+
+  <property>
+    <name>hbase.master.loadbalancer.class</name>
+    <value>org.apache.hadoop.hbase.rsgroup.RSGroupBasedLoadBalancer</value>
+  </property>
+
+<!--表region自动平衡-->
+  <property>
+    <name>hbase.master.loadbalance.bytable</name>
+    <value>true</value>
+  </property>
+ 
+  <property>
+    <name>hbase.bucketcache.ioengine</name>
+    <value>offheap</value>
+  </property>
+
+  <property>
+    <name>hbase.bucketcache.size</name>
+    <value>{{ hbase.regionserver['hbase.bucketcache.size'] }}</value>
+  </property>
+
+  <!-- storefile数量大于该值执行compact -->
+  <property>
+      <name>hbase.hstore.compactionThreshold</name>
+      <value>5</value>
+  </property>
+
+  <property>
+    <name>hbase.hstore.compaction.min</name>
+    <value>5</value>
+  </property>  
+
+  <!-- 最多选取多少个storefile进行compace -->
+  <property>
+      <name>hbase.hstore.compaction.max</name>
+      <value>20</value>
+  </property>
+
+  <property>
+    <name>hbase.hstore.compaction.min.size</name>
+    <value>134217728</value>
+  </property>
+
+  <property>
+    <name>hbase.hstore.compaction.max.size</name>
+    <value>10737418240</value>
+  </property>
+
+  <property>
+      <name>hbase.regionserver.thread.compaction.small</name>
+      <value>5</value>
+  </property>
+
+  <property>
+      <name>hbase.regionserver.thread.compaction.large</name>
+      <value>5</value>
+  </property>
+
+  <property>
+    <name>hbase.hregion.majorcompaction</name>
+    <value>604800000</value>
+  </property>
+
+</configuration>
+

@@ -1,0 +1,47 @@
+#!/bin/bash
+# 
+# netconsole    This loads the netconsole module with the configured parameters.
+#
+# chkconfig:123456 40 60
+# description: keephdfsjournal
+source /etc/profile
+PRO_NAME=keephdfsjournal
+
+INS_DIR={{ deploy_dir }}
+#版本
+VERSION={{ hadoop_version }}
+
+case $1 in
+start)
+journal=`ps -ef | grep dae-hdfsjournal.sh | grep -v grep | wc -l`
+if [ $journal -lt 1 ];then
+nohup $INS_DIR/$VERSION/sbin/dae-hdfsjournal.sh > /dev/null 2>&1 &
+fi
+
+;;
+
+stop)
+HAS_KEEP_SHELL=`ps -ef | grep dae-hdfsjournal.sh | grep -v grep | awk '{print $2}'`
+if [ $HAS_KEEP_SHELL ];then
+echo "守护进程PID：$HAS_KEEP_SHELL"
+kill -9 $HAS_KEEP_SHELL
+fi
+
+sh $INS_DIR/$VERSION/sbin/hadoop-daemon.sh stop journalnode > /dev/null
+;;
+
+status)
+num=`ps -ef | grep JournalNode | grep -v grep | wc -l`
+if [ "$num" -eq "1" ];then
+echo "JournalNode进程已启动"
+else
+echo "JournalNode进程未启动"
+fi
+
+;;
+
+* )
+echo "use keephdfsjournal [start|stop|status]"
+;;
+esac
+

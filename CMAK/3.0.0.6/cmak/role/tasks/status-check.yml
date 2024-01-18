@@ -1,0 +1,13 @@
+- name: Waitting for cmak running,30s
+  shell: sleep 30
+
+- name: Check if the Kafka already exists
+  shell: netstat -anlp | grep "9998" | grep java |  grep LISTEN | wc -l
+  register: port_out
+
+- name: To terminate execution
+  fail:
+   msg: "CMAK on node {{ inventory_hostname }} is not started. Please check"
+  run_once: true
+  delegate_to: 127.0.0.1 
+  when: port_out.stdout != '1'

@@ -1,0 +1,36 @@
+- name: Waitting for HBase running,10s
+  shell: sleep 10
+
+- block:
+    - name: Check the HBase Master node status
+      shell: ps -ef | grep "org.apache.hadoop.hbase.master.HMaster" | grep -v grep |wc -l
+      register: check_master
+
+    - name: To terminate execution
+      fail:
+       msg: "检测到{{ inventory_hostname }}节点HBase未正常启动；请保留日志反馈，路径：{{ deploy_dir }}/{{ container_name }}/logs"
+      run_once: true
+      delegate_to: 127.0.0.1
+      when: check_master.stdout != '1'
+  when: inventory_hostname in groups['hbase'][0:3]
+
+- block:
+    - name: Check the HBase HRegionServer node status
+      shell: ps -ef | egrep "org.apache.hadoop.hbase.regionserver.HRegionServer" | grep -v grep |wc -l
+      register: check_region
+
+    - name: To terminate execution
+      fail:
+       msg: "检测到{{ inventory_hostname }}节点HBase未正常启动；请保留日志反馈，路径：{{ deploy_dir }}/{{ container_name }}/logs"
+      run_once: true
+      delegate_to: 127.0.0.1
+      when: check_region.stdout != '1'
+
+- name: Initializing phoenix
+  shell: cd {{ deploy_dir }}/{{ container_name }}/phoenix-hbase-2.2-5.1.2-bin/bin/ && ./startsql.sh
+
+- name: Enable RsGroup
+  shell: cd {{ deploy_dir }}/{{ container_name }}/init/ && ./rsgroup.sh | grep ERROR | egrep -v "already exists|Target RSGroup important is same as source|Source RSGroup important is same as target" 
+  register: result
+  failed_when: "'ERROR' in result.stdout"
+  when: hbase.common.enable_rsgroup

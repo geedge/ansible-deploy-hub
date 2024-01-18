@@ -1,0 +1,43 @@
+- name: Validating ArangoDB server nodes
+  fail:
+    msg: "ArangoDB only supports single instance deployment,please checking configurations/hosts -> arangodb"
+  when: (groups.arangodb|length) != 1
+
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}'
+
+- name: Copying ArangoDB docker image
+  copy:
+    src: 'files/{{image_name}}-{{image_tag}}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+
+- name: Loading {{ image_name }} image
+  docker_image:
+    name: '{{ image_name }}'
+    tag: '{{ image_tag }}'
+    load_path: '{{ deploy_dir }}/{{ container_name }}/{{image_name}}-{{image_tag}}.tar'
+    source: load
+    force_tag: yes
+    force_source: yes
+  notify:
+    - Loading Image
+
+- name: Copying docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml'
+    backup: false
+    force: true
+
+- name: Initialize arangodb
+  unarchive:
+    src: 'files/init.zip'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+  notify:
+    - Loading Image
+    - Start Container
+
+- meta: flush_handlers

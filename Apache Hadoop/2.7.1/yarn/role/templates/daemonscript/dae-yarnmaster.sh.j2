@@ -1,0 +1,41 @@
+#!/bin/bash
+source /etc/profile
+
+BASE_DIR={{ deploy_dir }}
+
+VERSION={{ hadoop_version }}
+
+function set_log(){
+RES_SUM_FILE=$BASE_DIR/$VERSION/logs
+
+if [ ! -f "$RES_SUM_FILE/" ]
+then
+  mkdir -p $RES_SUM_FILE
+fi
+
+if [ ! -d "$RES_SUM_FILE/$1" ];then
+  echo "0" > $RES_SUM_FILE/$1
+fi
+
+OLD_NUM=`cat $RES_SUM_FILE/$1`
+RESTART_NUM=`expr $OLD_NUM + 1`
+echo $RESTART_NUM > $RES_SUM_FILE/$1
+if [ $OLD_NUM -eq "0" ];then
+  echo "`date "+%Y-%m-%d %H:%M:%S"` - Yarn $2服务初次启动" >> $BASE_DIR/$VERSION/logs/restart.log
+else
+  echo "`date +%Y-%m-%d` `date +%H:%M:%S` - Yarn $2服务异常 - 重启次数 -> $RESTART_NUM." >> $BASE_DIR/$VERSION/logs/restart.log
+fi
+}
+
+
+while true ; do
+
+HAS_RM=`ps -ef | grep "org.apache.hadoop.yarn.server.resourcemanager.ResourceManager" | grep -v grep | wc -l`
+
+if [ $HAS_RM -eq "0" ];then
+  $BASE_DIR/$VERSION/sbin/yarn-daemon.sh start resourcemanager > /dev/null
+  set_log nmRes_sum ResourceManager
+fi
+
+sleep 60
+done

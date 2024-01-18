@@ -1,0 +1,55 @@
+- block:
+    - name: check zookeeper nodes is odd number
+      shell: if [ `expr {{groups.zookeeper|length}} % 2` -eq 0 ];then echo 1 ;else echo 0 ;fi
+      ignore_errors: false
+      register: nums_out
+
+    - name: To terminate execution
+      fail:
+        msg: "zookeeper 节点配置数量必须为奇数台，请修改。"
+      when: nums_out.stdout != '0'
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/{{ item.dir }}'
+  with_items:
+    - { dir: 'conf' }
+    - { dir: 'data' }
+    - { dir: 'logs' }  
+    - { dir: 'monitor' }  
+    
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Loading Image
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/monitor
+  copy:
+    src: 'files/zookeeper_exporter-v1.0.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/monitor/'
+    force: true
+  notify:
+    - Loading Exporter Image
+
+- name: Config config files
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0644
+  with_items:
+    - { src: 'myid.j2', dest: '{{ deploy_dir }}/{{ container_name }}/data/myid' }
+    - { src: 'zoo.cfg.j2', dest: '{{ deploy_dir }}/{{ container_name }}/conf/zoo.cfg' }
+    - { src: 'docker-compose.yml.j2', dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml' }
+    - { src: 'docker-compose_exporter.yml.j2', dest: '{{ deploy_dir }}/{{ container_name }}/monitor/docker-compose.yml' }
+  notify:
+    - Loading Image
+    - Start Container
+    - Start Exporter Container
+
+- meta: flush_handlers

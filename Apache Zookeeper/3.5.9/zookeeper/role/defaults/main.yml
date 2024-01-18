@@ -1,0 +1,9 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+zookeeper:
+  #Running memory of the Zookeeper.
+  java_opts: -Xmx1024m -Xms1024m

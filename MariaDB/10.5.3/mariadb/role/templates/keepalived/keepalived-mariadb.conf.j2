@@ -1,0 +1,48 @@
+#mariadb Load balancing start
+vrrp_script chk_mariadb {
+    script "/etc/keepalived/check_mariadb.sh"
+    #每2s检查一次
+    interval 2
+    #每次检查-20
+    weight -20
+}
+
+#VRRP实例定义块
+vrrp_instance VI_MARIADB {
+{% if inventory_hostname == groups.mariadb[0] %}
+#状态只有MASTER和BACKUP两种，并且要大写，MASTER为工作状态，BACKUP是备用状态。
+state MASTER
+#优先级，同一个vrrp_instance的MASTER优先级必须比BACKUP高。
+priority 150
+{% elif inventory_hostname == groups.mariadb[1] %}
+#状态只有MASTER和BACKUP两种，并且要大写，MASTER为工作状态，BACKUP是备用状态。
+state BACKUP
+#优先级，同一个vrrp_instance的MASTER优先级必须比BACKUP高。
+priority 100
+{% endif %}
+#网卡名称
+interface {{ ansible_default_ipv4.interface }}
+#虚拟路由标识，同一个vrrp_instance的MASTER和BACKUP的vitrual_router_id 是一致的。
+virtual_router_id 66
+#MASTER 与BACKUP 负载均衡器之间同步检查的时间间隔，单位为秒。
+advert_int 1
+authentication {
+#验证authentication。包含验证类型和验证密码。类型主要有PASS、AH 两种，通常使用的类型为PASS
+auth_type PASS
+#据说AH 使用时有问题。验证密码为明文，同一vrrp 实例MASTER 与BACKUP 使用相同的密码才能正常通信
+auth_pass 1111
+}
+#触发的脚本
+track_script {
+#检测脚本，上面配置的
+    chk_mariadb
+}
+virtual_ipaddress {
+#虚拟ip地址,可以有多个地址，每个地址占一行，不需要子网掩码
+    {{ mariadb_virtual_ipaddress }}
+}
+}
+#mariadb Load balancing end
+
+
+

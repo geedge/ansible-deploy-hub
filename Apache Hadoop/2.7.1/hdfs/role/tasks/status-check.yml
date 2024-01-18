@@ -1,0 +1,53 @@
+- name: Setting node_nums variable
+  set_fact: node_nums="{{groups.hdfs|length}}"
+  
+- name: Waiting for the HDFS start,sleep 30s
+  shell: sleep 30  
+  
+- block:
+    - name: checking JournalNode status
+      shell: source /etc/profile && jps | grep JournalNode | grep -v grep | wc -l
+      register: status_out
+
+    - name: checking JournalNode
+      fail:
+        msg: "JournalNode节点启动异常，请登陆{{ inventory_hostname }},保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/*journalnode*"
+      when: status_out.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+  when: inventory_hostname in groups['hdfs'][0:3]
+  
+- block:
+    - name: checking DFSZKFailoverController status
+      shell: source /etc/profile && jps | grep DFSZKFailoverController | grep -v grep | wc -l
+      register: status_out
+
+    - name: checking DFSZKFailoverController
+      fail:
+        msg: "DFSZKFailoverController节点启动异常，请登陆{{ inventory_hostname }},保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/*zkfc*"
+      when: status_out.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+      
+    - name: checking NameNode status
+      shell: source /etc/profile && jps | grep NameNode | grep -v grep | wc -l
+      register: status_out
+
+    - name: checking NameNode
+      fail:
+        msg: "NameNode节点启动异常，请登陆{{ inventory_hostname }},保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/*namenode*"
+      when: status_out.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+  when: inventory_hostname in groups['hdfs'][0:2]  
+ 
+- name: checking DataNode status
+  shell: source /etc/profile && jps | grep DataNode | grep -v grep | wc -l
+  register: status_out
+
+- name: checking DataNode
+  fail:
+    msg: "DFSZKFailoverController节点启动异常，请登陆{{ inventory_hostname }},保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/*datanode*"
+  when: status_out.stdout != '1'
+  run_once: true
+  delegate_to: 127.0.0.1

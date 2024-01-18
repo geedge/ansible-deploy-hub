@@ -1,0 +1,132 @@
+- block:
+    - name: Checking system requirements,if current CPU has support for SSE 4.2
+      shell: lscpu |grep sse4_2 | wc -l
+      register: check_cpu_out
+      
+    - name: Checking system requirements result
+      fail:
+        msg: "Running ClickHouse on processors that do not support SSE 4.2 or have AArch64 or PowerPC64LE architecture."
+      when: check_cpu_out.stdout < '1'
+
+    - name: Check the Zookeeper status
+      shell: netstat -anlp | egrep "2181" | grep LISTEN | wc -l
+      register: port_out
+      delegate_to: '{{ groups.zookeeper[0] }}'
+    
+    - name: To terminate execution
+      fail:
+       msg: "Port 2181 of the zookeeper node is not monitored. The status may be abnormal"
+      run_once: true
+      delegate_to: 127.0.0.1
+      when: port_out.stdout != '1'
+
+
+- name: Getting readonly key sha256
+  shell: echo -n "{{ clickhouse_query_pin }}"|sha256sum | tr -d '-' | sed -e 's/^[ ]*//g' | sed -e 's/[ ]*$//g'
+  register: readonly_key_out
+
+- name: Setting readonly_key_sha variable
+  set_fact: readonly_key_sha="{{readonly_key_out.stdout}}"
+
+- name: Getting root key sha256
+  shell: echo -n "{{ clickhouse_default_pin }}"|sha256sum| tr -d '-' | sed -e 's/^[ ]*//g' | sed -e 's/[ ]*$//g'
+  register: root_key_out
+
+- name: Setting root_key_sha variable
+  set_fact: root_key_sha="{{root_key_out.stdout}}"
+    
+- name: Creating ClickHouse install path
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ item.path }}'
+  with_items:
+    - { path: 'clickhouse/clickhouse-server' }  
+    - { path: 'clickhouse/rpm' }
+    - { path: 'clickhouse/logs' }
+    - { path: 'clickhouse/monitor' }
+    
+- name: Copying ClickHouse config files
+  template: 
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0755
+    force: true
+  with_items:
+    - { src: 'clickhouse-server.j2', dest: '{{ deploy_dir }}/clickhouse/clickhouse-server/clickhouse-server' }
+    - { src: 'clickhouse-server.j2', dest: '/etc/init.d/clickhouse-server' }
+    - { src: 'ck_monitor.sh.j2', dest: '{{ deploy_dir }}/clickhouse/monitor/ck_monitor.sh' }
+    
+- name: Copying ClickHouse configuration files to {{ deploy_dir }}/clickhouse/clickhouse-server/
+  template: 
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    force: true
+  with_items:
+    - { src: 'config.xml.j2', dest: '{{ deploy_dir }}/clickhouse/clickhouse-server/config.xml' }
+    - { src: 'users.xml.j2', dest: '{{ deploy_dir }}/clickhouse/clickhouse-server/users.xml' }
+    - { src: 'docker-compose_exporter.yml.j2', dest: '{{ deploy_dir }}/clickhouse/monitor/docker-compose.yml' }
+
+- name: Copying ClickHouse config files
+  template:
+    src: 'metrika_query.xml.j2'
+    dest: '{{ deploy_dir }}/clickhouse/clickhouse-server/metrika.xml'
+    force: true
+  when: inventory_hostname in groups['clickhouse'][:2]    
+     
+- name: Copying ClickHouse config files
+  template:
+    src: 'metrika_data.xml.j2'
+    dest: '{{ deploy_dir }}/clickhouse/clickhouse-server/metrika.xml'
+    force: true
+  when: inventory_hostname not in groups['clickhouse'][:2]        
+    
+- name: Modify clickhouse process limits
+  shell: if [ `cat /etc/security/limits.d/20-nproc.conf | grep clickhouse | wc -l` -eq "0" ];then echo "clickhouse       soft    nproc     65535" >> /etc/security/limits.d/20-nproc.conf ;fi
+
+#复制tar到目标服务器
+- name: Copying clickhouse rpm files
+  copy: 
+    src: 'files/{{ item.file }}'
+    dest: '{{ deploy_dir }}/clickhouse/rpm/'
+    force: true
+  with_items:
+    - { file: 'clickhouse-client-21.8.13.1.altinitystable-2.noarch.rpm' }
+    - { file: 'clickhouse-common-static-21.8.13.1.altinitystable-2.x86_64.rpm' }
+    - { file: 'clickhouse-server-21.8.13.1.altinitystable-2.noarch.rpm' }
+
+    
+- name: Installing Data nodes Clickhouse
+  shell: "if [ `rpm -qa | grep {{ item.file }} | wc -l` -eq '0' ]; then rpm -ivh --nodeps {{ deploy_dir }}/clickhouse/rpm/{{ item.file }} ; fi"
+  with_items:
+    - { file: 'clickhouse-client-21.8.13.1.altinitystable-2.noarch.rpm' }
+    - { file: 'clickhouse-common-static-21.8.13.1.altinitystable-2.x86_64.rpm' }
+    - { file: 'clickhouse-server-21.8.13.1.altinitystable-2.noarch.rpm' }
+  ignore_errors: true
+
+- name: Ansible delete new version clickhouse start shell
+  file:
+    path: "{{ item.filename }}"
+    state: absent
+  with_items:
+    - { filename: '/etc/systemd/system/clickhouse-server.service' }
+    - { filename: '/usr/lib/systemd/system/clickhouse-server.service' }
+    - { filename: '/etc/clickhouse-server' }
+
+- name: enable clickhouse bootstrap
+  shell: chkconfig --add clickhouse-server && chkconfig clickhouse-server on && service clickhouse-server start
+
+- name: Copying clickhouse_exporter-2.0.tar
+  copy:
+    src: 'files/clickhouse_exporter-2.0.tar'
+    dest: '{{ deploy_dir }}/clickhouse/monitor/'
+    force: true    
+  notify:
+    - Loading Exporter Image
+    - Start Exporter Container
+
+- name: Adding a cron -> Check Clickhouse up to node_exporter
+  cron: 
+    name: 'Check Clickhouse up to node_exporter'
+    minute: "*/5"
+    job: '{{ deploy_dir }}/clickhouse/monitor/ck_monitor.sh'
+    user: root

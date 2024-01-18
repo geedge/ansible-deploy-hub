@@ -1,0 +1,5 @@
+#groot版本
+groot_stream_version: groot-stream-1.0
+
+#Jdk版本
+java_version: 1.8.0_73

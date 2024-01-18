@@ -1,0 +1,12 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+clickhouse:
+  #Limit on total memory usage. Zero means Unlimited.
+  max_server_memory_usage: 30000000000
+  #Sets the number of threads performing background merges and mutations for tables with MergeTree engines.
+  background_pool_size: 16
+

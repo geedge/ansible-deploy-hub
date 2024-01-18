@@ -1,0 +1,40 @@
+#!/bin/bash
+# 
+# netconsole    This loads the netconsole module with the configured parameters.
+#
+# chkconfig:123456 40 60
+# description: keepyarnmaster
+source /etc/profile
+PRO_NAME=keepyarnmaster
+
+INS_DIR={{ deploy_dir }}
+#版本
+VERSION={{ hadoop_version }}
+
+case $1 in
+start)
+master=`ps -ef | grep "dae-yarnmaster.sh" | grep -v grep | wc -l`
+if [ $master -lt 1 ];then
+nohup $INS_DIR/$VERSION/sbin/dae-yarnmaster.sh > /dev/null 2>&1 &
+fi
+;;
+
+stop)
+HAS_KEEP_SHELL=`ps -ef | grep "dae-yarnmaster.sh" | grep -v grep | awk '{print $2}'`
+if [ $HAS_KEEP_SHELL ];then
+echo "守护进程PID：$HAS_KEEP_SHELL"
+kill -9 $HAS_KEEP_SHELL
+fi
+
+sh $INS_DIR/$VERSION/sbin/yarn-daemon.sh stop resourcemanager > /dev/null
+;;
+
+status)
+yarn rmadmin -getServiceState rsm1
+;;
+
+* )
+echo "use keepyarnmaster [start|stop|status]"
+;;
+esac
+

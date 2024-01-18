@@ -1,0 +1,10 @@
+-server
+{{ druid.coordinator.java_opts }}
+-XX:+UseG1GC
+-Duser.timezone=UTC
+-Dfile.encoding=UTF-8
+-Djava.io.tmpdir=var/tmp
+-Dlogfile.name=coordinator
+-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
+-Dderby.stream.error.file=var/druid/derby.log
+

@@ -1,0 +1,22 @@
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}'
+    
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Loading Image
+
+- name: Copying Kafka config files
+  template:
+    src: 'docker-compose.yml.j2'
+    dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml'
+    mode: 0644
+  notify:
+    - Start Container
+
+- meta: flush_handlers

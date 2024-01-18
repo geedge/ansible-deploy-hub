@@ -1,0 +1,19 @@
+- block:
+    - include: uninstall.yml
+    - include: deploy.yml
+    - include: status-check.yml
+  when: (operation) == "install" and (groups.druid|length) > 1
+
+- block:
+    - include: uninstall.yml
+  when: (operation) == "uninstall" and (groups.druid|length) > 1
+
+- block:
+    - include: standalone/uninstall.yml
+    - include: standalone/deploy.yml
+    - include: status-check.yml
+  when: (operation) == "install" and (groups.druid|length) == 1
+
+- block:
+    - include: standalone/uninstall.yml
+  when: (operation) == "uninstall" and (groups.druid|length) == 1

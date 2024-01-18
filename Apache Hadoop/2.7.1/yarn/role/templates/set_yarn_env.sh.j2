@@ -1,0 +1,58 @@
+#!/bin/bash
+
+source /etc/profile
+
+function setChkconfig(){
+echo -e "\n#hadoop\nexport HADOOP_HOME={{ deploy_dir }}/{{ hadoop_version }}\nexport PATH=\$HADOOP_HOME/sbin:\$PATH\nexport PATH=\$HADOOP_HOME/bin:\$PATH\nexport HADOOP_CLASSPATH=\`hadoop classpath\`" >> /etc/profile.d/hadoop.sh
+chmod +x /etc/profile.d/hadoop.sh
+
+if [ -x '/etc/init.d/keepyarnhistory' ];then
+  chkconfig --add keepyarnhistory
+  chkconfig keepyarnhistory on
+fi
+
+if [ -x '/etc/init.d/keepyarnmaster' ];then
+  chkconfig --add keepyarnmaster
+  chkconfig keepyarnmaster on
+fi
+
+if [ -x '/etc/init.d/keepyarnworker' ];then
+  chkconfig --add keepyarnworker
+  chkconfig keepyarnworker on
+fi
+}
+
+case $1 in
+history)
+if [ -x '/etc/init.d/keepyarnhistory' ];then
+  service keepyarnhistory start && sleep 5
+  history_dae=`ps -ef | grep "dae-yarnhistory.sh" | grep -v grep | wc -l`
+  if [ $history_dae -lt 1 ];then
+    nohup {{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-yarnhistory.sh > /dev/null 2>&1 &
+  fi
+fi
+;;
+master)
+if [ -x '/etc/init.d/keepyarnmaster' ];then
+  service keepyarnmaster start && sleep 5
+  master_dae=`ps -ef | grep "dae-yarnmaster.sh" | grep -v grep | wc -l`
+  if [ $master_dae -lt 1 ];then
+    nohup {{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-yarnmaster.sh > /dev/null 2>&1 &
+  fi
+fi
+;;
+worker)
+if [ -x '/etc/init.d/keepyarnworker' ];then
+  service keepyarnworker start && sleep 5
+  worker_dae=`ps -ef | grep dae-yarnworker.sh | grep -v grep | wc -l`
+  if [ $worker_dae -lt 1 ];then
+    nohup {{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-yarnworker.sh > /dev/null 2>&1 &
+  fi
+fi  
+;;  
+chkconfig)
+  setChkconfig;;
+* )
+;;
+esac
+

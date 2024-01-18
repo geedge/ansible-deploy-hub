@@ -1,0 +1,17 @@
+version: '2'
+
+services:
+  arangodb:
+    image: {{ image_name }}:{{ image_tag }}
+    restart: always
+    container_name: {{ container_name }}
+    environment:
+      ARANGO_ROOT_PASSWORD: "{{ arangodb_default_pin }}"
+    ports:
+      - "8529:8529"
+    volumes:
+      - "{{ deploy_dir }}/{{ container_name }}/conf:/etc/arangodb3"
+      - "{{ deploy_dir }}/{{ container_name }}/data:/var/lib/arangodb3"
+      - "{{ deploy_dir }}/{{ container_name }}/log:/var/log/arangodb3"
+    restart: always
+    network_mode: "host"

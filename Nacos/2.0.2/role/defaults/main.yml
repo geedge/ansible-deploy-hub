@@ -1,0 +1,18 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+#The Mysql/Mariadb databases connection information
+nacos_mysql_host: '{{ vrrp_instance.default.virtual_ipaddress }}'
+
+#The Mysql/Mariadb username
+nacos_mysql_username: 'root'
+
+#The Mysql/Mariadb password
+nacos_mysql_password: '{{ mariadb_default_pin }}'
+
+nacos:
+  #Running memory of the Nacos.
+  java_opt: '-Xmx1024m -Xms1024m -Xmn256m'

@@ -1,0 +1,13 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+kafka:
+  #Running memory of the Kafka.
+  java_opt: '-Xmx1024m -Xms1024m'
+  #The minimum age of a log file to be eligible for deletion due to age
+  log.retention.hours: 168
+  #A size-based retention policy for logs,unit byte
+  log.retention.bytes: 10737418240

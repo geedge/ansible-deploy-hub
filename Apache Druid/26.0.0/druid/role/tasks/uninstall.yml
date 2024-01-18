@@ -1,0 +1,64 @@
+- name: copy mysql to /usr/bin/
+  copy:
+    src: 'files/mysql'
+    dest: '/usr/bin/'
+    force: true
+    mode: 0755
+
+- block:
+    - name: Stopping and removing {{ container_name }} container
+      docker_container:
+        name: '{{ container_name }}'
+        state: absent
+    
+    - name: Removing old {{ image_name }} image
+      docker_image:
+        name: '{{ image_name }}'
+        tag: '{{ image_tag }}'
+        state: absent
+
+    - name: Ansible delete old {{ deploy_dir }}/{{ container_name }}
+      file:
+        path: '{{ deploy_dir }}/{{ container_name }}'
+        state: absent
+
+- block:  
+    - name: check database
+      shell: mysql -s -uroot -p{{ mariadb_default_pin }} -P3306 -h{{ groups.mariadb[0] }} -e "DROP DATABASE IF EXISTS {{ druid_database }};"
+      run_once: true      
+      delegate_to: "{{ groups.druid[0] }}"
+
+    - name: Checking ZooKeeper has druid nodes
+      shell: "docker exec -it zookeeper zkCli.sh ls / | grep druid | wc -l"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      register: has_zknode
+
+    - name: Delete druid nodes in ZooKeeper
+      shell: "docker exec -it zookeeper zkCli.sh rmr /druid"
+      run_once: true
+      delegate_to: "{{ groups.zookeeper[0] }}"
+      when: has_zknode.stdout >= '1'        
+
+    - name: Checking HDFS has Druid folder
+      shell: source /etc/profile && hdfs dfs -ls / | grep druid | wc -l
+      register: folder_exists
+      run_once: true
+      delegate_to: "{{ groups.hdfs[0] }}"
+  
+    - name: Delete Druid data folder in HDFS
+      shell: source /etc/profile && hadoop fs -rm -r /druid
+      run_once: true
+      delegate_to: "{{ groups.hdfs[0] }}"
+      when: folder_exists.stdout >= '1'
+
+    - name: Check if the Druid service already exists
+      shell: ps -ef |grep "org.apache.druid.cli.Main server" | grep -v grep | grep -v json | wc -l
+      register: check_out
+      
+    - name: To terminate execution
+      fail:
+       msg: "Uninstall failed, the Druid process is still running, please check!"
+      run_once: true
+      delegate_to: 127.0.0.1 
+      when: check_out.stdout >= '1'  

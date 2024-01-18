@@ -1,0 +1,11 @@
+#镜像名称
+image_name: pushgateway
+
+#镜像版本号
+image_tag: 1.4.2
+
+#容器名称
+container_name: pushgateway
+
+#组件版本
+component_version: pushgateway-1.4.2 

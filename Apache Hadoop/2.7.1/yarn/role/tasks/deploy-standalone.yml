@@ -1,0 +1,136 @@
+- name: check Jdk version
+  shell: source /etc/profile && java -version 2>&1 | grep {{ java_version }} | wc -l
+  ignore_errors: false
+  register: jdk_out
+
+- name: To terminate execution
+  fail:
+    msg: "JDK is not installed in the target cluster, please check!"
+  when: jdk_out.stdout != '2'
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: create hadoop package path:{{ deploy_dir }}
+  file:
+    state: directory
+    path: '{{ deploy_dir }}'
+
+- name: unpack hadoop-2.7.1.tar.gz to {{ deploy_dir }}/
+  unarchive: 
+    src: 'files/{{ hadoop_version }}.tar.gz'
+    dest: '{{ deploy_dir }}/'
+    
+- name: copying yarn master config files
+  template: 
+    src: '{{ item.src }}'
+    dest: '{{ deploy_dir }}/{{ hadoop_version }}/{{ item.dest }}'
+    mode: '{{ item.mode }}'
+    backup: false
+  with_items:
+    - { src: 'standalone/yarn-site.xml.j2', dest: 'etc/hadoop/yarn-site.xml', mode: '0644' }
+    - { src: 'standalone/hdfs-site.xml.j2', dest: 'etc/hadoop/hdfs-site.xml', mode: '0644' }
+    - { src: 'standalone/core-site.xml.j2', dest: 'etc/hadoop/core-site.xml', mode: '0644' }
+    - { src: 'slaves.j2', dest: 'etc/hadoop/slaves', mode: '0644' }
+    - { src: 'set_yarn_env.sh.j2', dest: 'bin/set_yarn_env.sh', mode: '0755' }
+    - { src: 'mapred-site.xml.j2', dest: 'etc/hadoop/mapred-site.xml', mode: '0644' } 
+    - { src: 'capacity-scheduler.xml.j2', dest: 'etc/hadoop/capacity-scheduler.xml', mode: '0644' }
+    - { src: 'yarn-env.sh.j2', dest: 'etc/hadoop/yarn-env.sh', mode: '0755' }
+    - { src: 'hadoop-env.sh.j2', dest: 'etc/hadoop/hadoop-env.sh', mode: '0755' } 
+      
+- name: copying yarn worker
+  template: 
+    src: 'daemonscript/{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0755
+    backup: yes
+  with_items:
+    - { src: 'dae-yarnhistory.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-yarnhistory.sh' }
+    - { src: 'dae-yarnmaster.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-yarnmaster.sh' }
+    - { src: 'keepyarnhistory.j2', dest: '/etc/init.d/keepyarnhistory' }
+    - { src: 'keepyarnmaster.j2', dest: '/etc/init.d/keepyarnmaster' }
+
+- block:
+    - name: Start ResourceManager and JobHistoryServer
+      shell: cd {{ deploy_dir }}/{{ hadoop_version }}/bin/ && ./set_yarn_env.sh {{ item.opeation }}
+      with_items:
+        - { opeation: 'chkconfig' }
+        - { opeation: 'master' }
+        - { opeation: 'history' }
+
+    - name: Waiting for the ResourceManager start,sleep 60s
+      shell: sleep 60
+        
+    - name: checking ResourceManager status
+      shell: source /etc/profile && jps -l | grep "org.apache.hadoop.yarn.server.resourcemanager.ResourceManager" | grep -v grep | wc -l
+      register: resourcemanager_check
+
+    - name: checking ResourceManager
+      fail:
+        msg: "ResourceManager节点启动异常，请登陆{{ inventory_hostname }},保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/"
+      when: resourcemanager_check.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+      
+    - name: checking JobHistoryServer status
+      shell: source /etc/profile && jps -l | grep "org.apache.hadoop.mapreduce.v2.hs.JobHistoryServer" | grep -v grep | wc -l
+      register: history_check
+
+    - name: checking JobHistoryServer
+      fail:
+        msg: "JobHistoryServer节点启动异常，请登陆{{ inventory_hostname }},保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/"
+      when: history_check.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1      
+  when: inventory_hostname in groups['yarn'][0:2]
+      
+- block: 
+    - name: copying yarn worker
+      template: 
+        src: 'daemonscript/{{ item.src }}'
+        dest: '{{ item.dest }}'
+        mode: 0755
+        backup: yes
+      with_items:
+        - { src: 'dae-yarnworker.sh.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-yarnworker.sh' }
+        - { src: 'keepyarnworker.j2', dest: '/etc/init.d/keepyarnworker' }  
+    
+    - name: Start NodeManager
+      shell: cd {{ deploy_dir }}/{{ hadoop_version }}/bin/ && ./set_yarn_env.sh {{ item.opeation }}
+      with_items:
+        - { opeation: 'chkconfig' }
+        - { opeation: 'worker' }
+    
+    - name: Waiting for the NodeManager start,sleep 60s
+      shell: sleep 60
+    
+    - name: checking NodeManager status
+      shell: source /etc/profile && jps -l | grep "org.apache.hadoop.yarn.server.nodemanager.NodeManager" | grep -v grep | wc -l
+      register: datanode_status
+    
+    - name: checking NodeManager
+      fail:
+        msg: "NodeManager未启动,请登陆[{{ inventory_hostname }}],保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/"
+      when: datanode_status.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+
+#--------------------------------------------Flink----------------------------------------------#
+- name: Copying Flink installation package
+  unarchive:
+    src: 'files/{{ flink_version }}.tgz'
+    dest: '{{ deploy_dir }}/{{ hadoop_version }}/'
+
+- name: Config flink configuration
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: '{{ item.mode }}'
+  with_items:
+    - { src: 'flink/flink.sh.j2', dest: '/etc/profile.d/flink.sh', mode: '0755' }
+    - { src: 'flink/flink-conf.yaml.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/{{ flink_version }}/conf/flink-conf.yaml', mode: '0644' }
+    - { src: 'standalone/yarn-site.xml.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/{{ flink_version }}/conf/yarn-site.xml', mode: '0644' }
+    - { src: 'standalone/core-site.xml.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/{{ flink_version }}/conf/core-site.xml', mode: '0644' }
+    - { src: 'standalone/hdfs-site.xml.j2', dest: '{{ deploy_dir }}/{{ hadoop_version }}/{{ flink_version }}/conf/hdfs-site.xml', mode: '0644' }
+
+- name: Start flink session
+  shell: source /etc/profile && cd {{ deploy_dir }}/{{ hadoop_version }}/{{ flink_version }}/bin/ && ./yarn-session.sh -d

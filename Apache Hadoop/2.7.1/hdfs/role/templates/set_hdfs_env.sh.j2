@@ -1,0 +1,71 @@
+#!/bin/bash
+
+source /etc/profile
+
+function setChkconfig(){
+echo -e "\n#hadoop\nexport HADOOP_HOME={{ deploy_dir }}/{{ hadoop_version }}\nexport PATH=\$HADOOP_HOME/sbin:\$PATH\nexport PATH=\$HADOOP_HOME/bin:\$PATH\nexport HADOOP_CLASSPATH=\`hadoop classpath\`" >> /etc/profile.d/hadoop.sh
+chmod +x /etc/profile.d/hadoop.sh
+
+if [ -x '/etc/init.d/keephdfsmaster' ];then
+  chkconfig --add keephdfsmaster
+  chkconfig keephdfsmaster on
+fi
+
+if [ -x '/etc/init.d/keephdfsslave' ];then
+  chkconfig --add keephdfsslave
+  chkconfig keephdfsslave on
+fi
+
+if [ -x '/etc/init.d/keephdfsworker' ];then
+  chkconfig --add keephdfsworker
+  chkconfig keephdfsworker on
+fi
+
+if [ -x '/etc/init.d/keephdfsjournal' ];then
+  chkconfig --add keephdfsjournal
+  chkconfig keephdfsjournal on
+fi
+}
+
+case $1 in
+journal)
+if [ -x '/etc/init.d/keephdfsjournal' ];then
+  service keephdfsjournal start && sleep 5
+  journal_dae=`ps -ef | grep dae-hdfsjournal.sh | grep -v grep | wc -l`
+  if [ $journal_dae -lt 1 ];then
+    nohup {{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsjournal.sh > /dev/null 2>&1 &
+  fi
+fi
+;;
+master)
+if [ -x '/etc/init.d/keephdfsmaster' ];then
+  service keephdfsmaster start && sleep 5
+  master_dae=`ps -ef | grep dae-hdfsmaster.sh | grep -v grep | wc -l`
+  if [ $master_dae -lt 1 ];then
+    nohup {{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsmaster.sh > /dev/null 2>&1 &
+  fi
+fi
+;;
+slave)
+if [ -x '/etc/init.d/keephdfsslave' ];then
+  service keephdfsslave start && sleep 5
+  slave_dae=`ps -ef | grep dae-hdfsslave.sh | grep -v grep | wc -l`
+  if [ $slave_dae -lt 1 ];then
+    nohup {{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsslave.sh > /dev/null 2>&1 &
+  fi
+fi  
+;;
+worker)
+if [ -x '/etc/init.d/keephdfsworker' ];then
+  service keephdfsworker start && sleep 5
+  worker_dae=`ps -ef | grep dae-hdfsworker.sh | grep -v grep | wc -l`
+  if [ $worker_dae -lt 1 ];then
+    nohup {{ deploy_dir }}/{{ hadoop_version }}/sbin/dae-hdfsworker.sh > /dev/null 2>&1 &
+  fi
+fi  
+;;  
+chkconfig)
+  setChkconfig;;
+* )
+;;
+esac

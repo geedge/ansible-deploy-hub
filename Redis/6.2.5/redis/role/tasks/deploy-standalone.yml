@@ -1,0 +1,30 @@
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/conf'
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Loading Image
+    
+- name: Copying Redis config files
+  template:
+    src: 'redis-master.conf.j2'
+    dest: '{{ deploy_dir }}/{{ container_name }}/conf/redis.conf'
+    mode: 0644
+
+- name: Copying Redis config files
+  template:
+    src: 'docker-compose.yml.j2'
+    dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml'
+    mode: 0644
+  notify:
+    - Loading Image
+    - Start Container
+
+- meta: flush_handlers
+

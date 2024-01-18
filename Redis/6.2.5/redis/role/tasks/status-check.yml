@@ -1,0 +1,17 @@
+- name: Waitting for Redis running,10s
+  shell: sleep 10
+
+- name: Check if the Redis already exists
+  shell: ps -ef | grep -v grep | grep "redis-server" | wc -l
+  register: process_out
+  
+- name: Check if the Redis already exists
+  shell: netstat -anlp | egrep "6379" | grep LISTEN | wc -l
+  register: port_out
+
+- name: To terminate execution
+  fail:
+   msg: "Kafka on node {{ inventory_hostname }} is not started. Please check"
+  run_once: true
+  delegate_to: 127.0.0.1 
+  when: process_out.stdout != '1' or port_out.stdout != '2'

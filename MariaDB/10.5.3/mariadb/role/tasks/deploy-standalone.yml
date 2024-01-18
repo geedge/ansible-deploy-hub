@@ -1,0 +1,66 @@
+- name: Setting node_nums variable
+  set_fact: node_nums={{ groups.mariadb|length }}
+
+- name: To terminate execution
+  fail:
+    msg: "MariaDB standalone mode. The value must have 1 nodes,please checking configurations/hosts -> mariadb"
+  when: node_nums != '1'
+
+- name: Creating directory
+  file:
+    state: directory
+    owner: ods
+    group: root    
+    path: '{{ deploy_dir }}/{{ container_name }}/{{ item.dir }}'
+  with_items:
+    - { dir: 'config' }
+    - { dir: 'logs' }  
+    - { dir: 'monitor' }  
+    
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Loading Image
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/monitor
+  copy:
+    src: 'files/mysqld_exporter-v1.0.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/monitor/'
+    force: true
+  notify:
+    - Loading Exporter Image
+    
+- name: Copying Mariadb config files
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0644
+  with_items:
+    - { src: 'my.cnf.j2', dest: '{{ deploy_dir }}/{{ container_name }}/config/my.cnf' }
+    - { src: 'docker-compose.yml.j2', dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml' }
+  notify:
+    - Start Container
+
+- meta: flush_handlers    
+    
+- name: Waitting for MariaDB running,20s
+  shell: sleep 20
+
+- name: Creating mariadb readonly user
+  shell: mysql -uroot -h{{ inventory_hostname }} -p{{ mariadb_default_pin }} -e "CREATE USER IF NOT EXISTS '{{ mariadb_query_username}}'@'%' IDENTIFIED BY '{{ mariadb_query_pin }}' WITH MAX_USER_CONNECTIONS 3;GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO '{{ mariadb_query_username}}'@'%';FLUSH PRIVILEGES;"
+  
+- name: change mariadb remote authority
+  shell: mysql -uroot -h{{ inventory_hostname }} -p{{ mariadb_default_pin }} -e"use mysql;grant all privileges on *.* to 'root'@'%' identified by '{{ mariadb_default_pin }}' with grant option;FLUSH PRIVILEGES;"
+
+- name: Copying Mariadb config files
+  template:
+    src: 'exporter_docker-compose.yml.j2'
+    dest: '{{ deploy_dir }}/{{ container_name }}/monitor/docker-compose.yml'
+    mode: 0644
+  notify:
+    - Start Exporter Container
+
+- meta: flush_handlers

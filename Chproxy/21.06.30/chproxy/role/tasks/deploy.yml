@@ -1,0 +1,31 @@
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/config'
+    
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Loading Image
+
+- name: Copying Chproxy config files
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: '{{ item.mode }}'
+  with_items:
+    - { src: 'config.yml.j2', dest: '{{ deploy_dir }}/{{ container_name }}/config/config.yml', mode: "0644" }
+      
+- name: Copying Chproxy docker-compose.yml
+  template:
+    src: 'docker-compose.yml.j2'
+    dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml'
+    mode: 0644
+  notify:
+    - Loading Image
+    - Start Container
+    
+- meta: flush_handlers

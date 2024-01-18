@@ -1,0 +1,232 @@
+<?xml version="1.0"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+<configuration>
+
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+	
+    <property>  
+       <name>yarn.resourcemanager.ha.enabled</name>  
+       <value>true</value>  
+    </property>  
+	
+    <!--声明两台resourcemanager的地址-->  
+    <property>  
+       <name>yarn.resourcemanager.cluster-id</name>  
+       <value>rsmcluster</value>  
+    </property> 
+	
+    <property>  
+       <name>yarn.resourcemanager.ha.rm-ids</name>  
+       <value>rsm1,rsm2</value>  
+    </property> 
+	
+    <!-- 配置rm1-->
+	<!-- 配置rm1 hostname-->
+	<property>
+       <name>yarn.resourcemanager.hostname.rsm1</name>
+       <value>{{ groups.yarn[0] }}</value>
+    </property>
+	
+	<!-- 配置rm1 web application-->
+    <property>
+       <name>yarn.resourcemanager.webapp.address.rsm1</name>
+       <value>{{ groups.yarn[0] }}:8080</value>
+    </property>
+	
+	<!-- 配置rm1 调度端口，默认8030-->
+    <property>
+       <name>yarn.resourcemanager.scheduler.address.rsm1</name>
+       <value>{{ groups.yarn[0] }}:8030</value>
+    </property>
+	
+	<!-- 默认端口8031-->
+    <property>
+       <name>yarn.resourcemanager.resource-tracker.address.rsm1</name>
+       <value>{{ groups.yarn[0] }}:8031</value>
+    </property>
+	
+	<!-- 配置rm1 应用程序管理器接口的地址端口，默认8032-->
+    <property>
+       <name>yarn.resourcemanager.address.rsm1</name>
+       <value>{{ groups.yarn[0] }}:8032</value>
+    </property>
+	
+	<!-- 配置rm1 管理端口，默认8033-->
+    <property>
+       <name>yarn.resourcemanager.admin.address.rsm1</name>
+       <value>{{ groups.yarn[0] }}:8033</value>
+    </property>
+	
+    <property>
+       <name>yarn.resourcemanager.ha.admin.address.rsm1</name>
+       <value>{{ groups.yarn[0] }}:23142</value>
+    </property>
+
+    <!-- 配置rm2-->
+    <property>
+       <name>yarn.resourcemanager.hostname.rsm2</name>
+       <value>{{ groups.yarn[1] }}</value>
+    </property>
+	
+    <property>
+       <name>yarn.resourcemanager.webapp.address.rsm2</name>
+       <value>{{ groups.yarn[1] }}:8080</value>
+    </property>
+	
+    <property>
+       <name>yarn.resourcemanager.scheduler.address.rsm2</name>
+       <value>{{ groups.yarn[1] }}:8030</value>
+    </property>
+	
+    <property>
+       <name>yarn.resourcemanager.resource-tracker.address.rsm2</name>
+       <value>{{ groups.yarn[1] }}:8031</value>
+    </property>
+	
+    <property>
+       <name>yarn.resourcemanager.address.rsm2</name>
+       <value>{{ groups.yarn[1] }}:8032</value>
+    </property>
+	
+    <property>
+       <name>yarn.resourcemanager.admin.address.rsm2</name>
+       <value>{{ groups.yarn[1] }}:8033</value>
+    </property>
+	
+    <property>
+       <name>yarn.resourcemanager.ha.admin.address.rsm2</name>
+       <value>{{ groups.yarn[1] }}:23142</value>
+    </property>
+	
+    <!--指定zookeeper集群的地址-->   
+    <property>  
+       <name>yarn.resourcemanager.zk-address</name>  
+{% for dev_info in groups.zookeeper -%}
+ {% if loop.last -%}
+{{dev_info}}:2181</value>
+ {% elif loop.first %}
+        <value>{{dev_info}}:2181,
+ {%- else %}
+{{dev_info}}:2181,
+ {%- endif %}
+{%- endfor %}
+    </property> 
+	
+    <!--启用自动恢复，当任务进行一半，rm坏掉，就要启动自动恢复，默认是false-->   
+    <property>
+       <name>yarn.resourcemanager.recovery.enabled</name>  
+       <value>true</value>  
+    </property>
+	
+	 <!--启用Nodemanager自动恢复，默认是false-->
+    <property>
+       <name>yarn.nodemanager.recovery.enabled</name>
+       <value>true</value>
+    </property>
+	
+	<!--配置NodeManager保存运行状态的本地文件系统目录路径 -->
+    <property>
+       <name>yarn.nodemanager.recovery.dir</name>
+       <value>{{ deploy_dir }}/{{ hadoop_version }}/yarn</value>
+    </property>
+	
+    <property>  
+       <name>yarn.resourcemanager.store.class</name>  
+       <value>org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore</value>  
+    </property> 
+
+    <!--配置nm可用的RPC地址，默认${yarn.nodemanager.hostname}:0，为临时端口。集群重启后，nm与rm连接的端口会变化，这里指定端口，保障nm restart功能 -->
+    <property>
+       <name>yarn.nodemanager.address</name>
+       <value>${yarn.nodemanager.hostname}:9923</value>
+    </property>
+	
+    <property>
+       <name>yarn.log-aggregation-enable</name>
+       <value>true</value>
+    </property>
+	
+    <property>
+       <name>yarn.nodemanager.log-aggregation.roll-monitoring-interval-seconds</name>
+       <value>3600</value>
+    </property>
+	
+    <property>
+       <name>yarn.nodemanager.remote-app-log-dir</name>
+       <value>{{ deploy_dir }}/{{ hadoop_version }}/logs/app-logs/</value>
+    </property>
+	
+	<!--NM可以为容器分配的物理内存量，以MB为单位 ，默认8192-->
+    <property>
+       <name>yarn.nodemanager.resource.memory-mb</name>
+       <value>{{ hadoop.yarn.nodemanager['yarn.nodemanager.resource.memory-mb'] }}</value>
+    </property>
+	
+	<!-- RM上每个容器请求的最小分配，以mb为单位，默认1024-->
+    <property>
+        <name>yarn.scheduler.minimum-allocation-mb</name>
+        <value>1024</value>
+    </property>	
+	
+	<!-- RM上每个容器请求的最大分配，以mb为单位，一般设置为 yarn.nodemanager.resource.memory-mb 一致，默认8192-->
+    <property>
+        <name>yarn.scheduler.maximum-allocation-mb</name>
+        <value>{{ hadoop.yarn.nodemanager['yarn.scheduler.maximum-allocation-mb'] }}</value>
+    </property>
+	
+	<!--可为容器分配的vcore数。RM调度器在为容器分配资源时使用它。这不是用来限制YARN容器使用的物理内核的数量，默认8，一般配置为服务器cpu总核数一致 -->
+   <property>
+        <name>yarn.nodemanager.resource.cpu-vcores</name>
+        <value>{{ hadoop.yarn.nodemanager['yarn.nodemanager.resource.cpu-vcores'] }}</value>
+    </property>
+	
+	<!--RM上每个容器请求的最小分配(以虚拟CPU内核为单位) ,默认1-->
+    <property>
+        <name>yarn.scheduler.minimum-allocation-vcores</name>
+        <value>1</value>
+    </property>
+	
+	<!--RM上每个容器请求的最大分配(以虚拟CPU内核为单位) ,默认32，一般配置为略小于yarn.nodemanager.resource.cpu-vcores，同时指定任务的slot不应超过该值-->
+    <property>
+        <name>yarn.scheduler.maximum-allocation-vcores</name>
+        <value>{{ hadoop.yarn.nodemanager['yarn.scheduler.maximum-allocation-vcores'] }}</value>
+    </property>
+	
+    <property>
+        <name>yarn.nodemanager.vmem-check-enabled</name>
+        <value>false</value>
+    </property>
+	
+   <property>
+        <name>yarn.nodemanager.pmem-check-enabled</name>
+        <value>false</value>
+    </property>
+	
+    <!--ApplicationMaster重启次数，配置HA后默认为2，生产环境可增大该值-->
+    <property>
+        <name>yarn.resourcemanager.am.max-attempts</name>
+        <value>10000</value>
+    </property>
+	
+    <property>
+        <name>yarn.log.server.url</name>
+        <value>http://{{ groups.yarn[0] }}:19888/jobhistory/logs</value>
+    </property>
+	
+</configuration>
+

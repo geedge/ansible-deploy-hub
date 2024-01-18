@@ -1,0 +1,11 @@
+- block: 
+    - include: uninstall.yml
+    - include: "{{ playbook_name }}"
+      vars:
+        playbook_name: "{{ 'deploy-cluster.yml' if groups.hbase | length > 1 else 'deploy-standalone.yml' }}"
+    - include: status-check.yml
+  when: (operation) == "install"
+
+- block:
+    - include: uninstall.yml
+  when: (operation) == "uninstall"

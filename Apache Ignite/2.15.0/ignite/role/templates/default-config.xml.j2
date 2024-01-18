@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+    xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/util
+    http://www.springframework.org/schema/util/spring-util.xsd">
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="cacheConfiguration">
+            <list>
+                <bean abstract="true" class="org.apache.ignite.configuration.CacheConfiguration" id="cache-template-bean">
+                    <!-- when you create a template via XML configuration, you must add an asterisk to the name of the template -->
+                    <property name="name" value="SanityDirectoryCacheTemplate*"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="backups" value="1"/>
+                    <property name="onheapCacheEnabled" value="true"/>
+                    <property name="rebalanceMode" value="ASYNC"/>
+                    <!-- 副本同步模式： -->
+                    <!--  PRIMARY_SYNC (默认模式，primary 写成功即可算成功,从backup节点读数据，有可能读到的任然是旧数据)  -->
+                    <!--  FULL_SYNC  (写cache的操作在primary节点和backup节点都成功写入后返回, 保证了写入成功后节点之间的数据都一样)  -->
+                    <!--  FULL_ASYNC (写cache的操作不用等primary节点和backup节点成功写入即可返回, 读primary节点的数据都有可能读到旧数据)  -->
+                    <property name="writeSynchronizationMode" value="PRIMARY_SYNC"/>
+                    <!-- 分区丢失处理： -->
+                    <!--  IGNORE (默认模式，即使出现了partition loss的情况，Ignite会自动忽略并且会清空和partion loss相关的状态不会触发EVT_CACHE_REBALANCE_PART_DATA_LOST 事件)  -->
+                    <!--  READ_WRITE_ALL  (Ignite允许所有的读写操作，就好像partition loss没发生过)  -->
+                    <!--  READ_WRITE_SAFE (允许对没有丢失的partition的读写操作，但是对已经丢失的partition的读写操作会失败并抛异常)  -->
+                    <!--  READ_ONLY_ALL (允许对丢失的和正常的partition的读操作，但是写操作会失败并抛异常)  -->
+                    <!--  READ_ONLY_SAFE (所有的写操作和对丢失partition的读操作都会失败并抛异常。允许对正常的partition的读操作)  -->
+                    <property name="partitionLossPolicy" value="READ_WRITE_ALL"/>
+                    <!-- Other cache parameters -->
+                    <!-- Enable statistics for the cache. -->
+                    <property name="statisticsEnabled" value="true"/>
+                </bean>
+            </list>
+        </property>
+        <property name="metricsLogFrequency" value="0"/>
+        <!--失败检测 超时时长-->
+        <property name="failureDetectionTimeout" value="#{60 * 60 * 1000}"/>
+        <!-- 服务worker 之间交互 timeout 时间，默认 10s -->
+        <property name="systemWorkerBlockedTimeout" value="#{60 * 60 * 1000}"/>
+        <!-- 服务出现故障自动重启 -->
+        <property name="failureHandler">
+            <bean class="org.apache.ignite.failure.RestartProcessFailureHandler"/>
+        </property>
+        <!-- Set batch size. -->
+        <property name="rebalanceBatchSize" value="#{1 * 1024 * 1024 * 1024}"/>
+        <!-- Set throttle interval. -->
+    <!-- 查询线程池大小 (max(8, total number of cores)) -->
+        <property name="queryThreadPoolSize" value="208"/>
+
+        <property name="rebalanceThrottle" value="100"/>
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+		            <!--并发性水平   可由自己实际情况而定 -->
+               <property name="concurrencyLevel" value="10000"/>
+
+                <!-- 设置内存页大小 (getconf PAGESIZE) -->
+                <property name="pageSize" value="#{4 * 1024}"/>
+                <!-- Size of the WAL (Write Ahead Log) segment -->
+                <property name="walSegmentSize" value="#{1024 * 1024 * 1024}"/>
+                <!--In our experience LOG_ONLY is a good compromise between durability and performance.-->
+                <property name="walMode" value="LOG_ONLY"/>
+                <!-- Enable write throttling. -->
+                <property name="writeThrottlingEnabled" value="true"/>
+                <!-- 检查点频率-->
+                <!--Checkpointing frequency which is a minimal interval when the dirty pages will be written to the Persistent Store.-->
+                <property name="checkpointFrequency" value="180000"/>
+                <!-- persistent storage metrics -->
+                <property name="metricsEnabled" value="true"/>
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <!-- 100 MB initial size. -->
+                        <property name="initialSize" value="#{100L * 1024 * 1024}"/>
+                        <!-- Setting region max size equal to physical RAM size(5 GB). -->
+                        <property name="maxSize" value="{{ ignite.maxSize }}"/>
+                        <property name="checkpointPageBufferSize" value="#{20L *1024* 1024 * 1024L}" />
+                        <property name="persistenceEnabled" value="true"/>
+                    </bean>
+                </property>
+                <!-- Defining several data regions for different memory regions 持久化数据存储目录 -->
+                <property name="storagePath" value="/persistence/storage" />
+                <property name="walArchivePath" value="/persistence/walArchive" />
+                <property name="walPath" value="/persistence/wal" />
+            </bean>
+        </property>
+        <property name="clientConnectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+                <property name="port" value="10800"/>
+            </bean>
+        </property>
+        <!-- 指标导出器. -->
+        <property name="metricExporterSpi">
+            <list>
+                <bean class="org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"/>
+                <bean class="org.apache.ignite.spi.metric.log.LogExporterSpi"/>
+                <bean class="org.apache.ignite.spi.metric.opencensus.OpenCensusMetricExporterSpi"/>
+            </list>
+        </property>
+        <!-- 节点发现. -->
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi">
+                <property name="zkConnectionString" value="{% for dev_info in groups.zookeeper -%}
+ {% if loop.last -%}
+{{dev_info}}:2181"/>
+ {%- else %}
+{{dev_info}}:2181,
+ {%- endif %}
+{%- endfor %}
+
+                <property name="sessionTimeout" value="30000"/>
+                <property name="zkRootPath" value="/apacheIgnite"/>
+                <property name="joinTimeout" value="10000"/>
+            </bean>
+        </property>
+    </bean>
+    <!-- 监控配置. -->
+    <bean id="opencensusWrapper" class="org.springframework.beans.factory.config.MethodInvokingBean">
+        <property name="staticMethod" value="io.opencensus.exporter.stats.prometheus.PrometheusStatsCollector.createAndRegister"/>
+    </bean>
+    <bean id="httpServer" class="io.prometheus.client.exporter.HTTPServer">
+        <constructor-arg type="java.lang.String" value="{{ inventory_hostname }}"/>
+        <constructor-arg type="int" value="9916"/>
+        <constructor-arg type="boolean" value="true"/>
+    </bean>
+</beans>

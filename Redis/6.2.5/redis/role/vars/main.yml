@@ -1,0 +1,19 @@
+#镜像名称
+image_name: redis
+
+#镜像版本号
+image_tag: 6.2.5
+
+#容器名称
+container_name: redis
+
+#组件版本
+component_version: redis-6.2.5
+
+#备份目录
+backup_path: "{{ deploy_dir }}/backup/platform/{{ old_version }}/{{ container_name }}"
+
+#待备份的文件
+backup_items:
+  - "{{ deploy_dir }}/{{ container_name }}/redis.conf"
+  - "{{ deploy_dir }}/{{ container_name }}/docker-compose.yml"

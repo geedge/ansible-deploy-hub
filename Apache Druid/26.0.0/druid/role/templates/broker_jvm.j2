@@ -1,0 +1,9 @@
+-server
+{{ druid.broker.java_opts }}
+-XX:MaxDirectMemorySize={{ druid.broker.MaxDirectMemorySize }}
+-Duser.timezone=UTC
+-Dfile.encoding=UTF-8
+-Djava.io.tmpdir=var/tmp
+-Dlogfile.name=broker
+-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager
+

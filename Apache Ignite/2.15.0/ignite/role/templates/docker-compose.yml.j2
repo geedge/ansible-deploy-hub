@@ -1,0 +1,26 @@
+version: '3.3'
+
+services:
+  ignite:
+    image: ignite:2.15.0
+    container_name: ignite
+    restart: always    
+    ports:
+      - "47103:47100"
+      - "47503:47500"
+      - "49114:49112"
+      - "10800:10800"
+      - "9999:9999"
+    environment:
+      - JVM_OPTS=-server {{ ignite.java_opt }} -XX:+AlwaysPreTouch -XX:+UseG1GC -XX:+ScavengeBeforeFullGC  -XX:+DisableExplicitGC -Duser.timezone=UTC
+      - IGNITE_QUIET=false
+      - IGNITE_CONFIG_FILE=/opt/ignite/apache-ignite/config/default-config.xml
+      - IGNITE_WORK_DIR=/persistence
+      - IGNITE_LIBS=/opt/ignite/apache-ignite/libs/*
+      - JAVA_OPTS=-Duser.timezone=Asia/Shanghai
+      - timezone=Asia/Shanghai
+    volumes:
+      - {{ deploy_dir }}/{{ container_name }}/config/default-config.xml:/opt/ignite/apache-ignite/config/default-config.xml:rw
+      - {{ deploy_dir }}/{{ container_name }}/data:/persistence:rw
+      - {{ deploy_dir }}/{{ container_name }}/libs:/opt/ignite/apache-ignite/libs
+    network_mode: "host"

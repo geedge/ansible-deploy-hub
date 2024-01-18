@@ -1,0 +1,57 @@
+- name: Setting node_nums variable
+  set_fact: node_nums="{{groups.yarn|length}}"
+
+- name: Waiting for the Yarn start,sleep 30s
+  shell: sleep 30  
+  
+- block:        
+    - name: checking ResourceManager status
+      shell: source /etc/profile && jps -l | grep "org.apache.hadoop.yarn.server.resourcemanager.ResourceManager" | grep -v grep | wc -l
+      register: resourcemanager_check
+
+    - name: checking ResourceManager
+      fail:
+        msg: "ResourceManager节点启动异常，请登陆{{ inventory_hostname }},保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/"
+      when: resourcemanager_check.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+      
+    - name: checking JobHistoryServer status
+      shell: source /etc/profile && jps -l | grep "org.apache.hadoop.mapreduce.v2.hs.JobHistoryServer" | grep -v grep | wc -l
+      register: history_check
+
+    - name: checking JobHistoryServer
+      fail:
+        msg: "JobHistoryServer节点启动异常，请登陆{{ inventory_hostname }},保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/"
+      when: history_check.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1      
+  when: inventory_hostname in groups['yarn'][0:2]
+      
+- block: 
+    - name: checking NodeManager status
+      shell: source /etc/profile && jps -l | grep "org.apache.hadoop.yarn.server.nodemanager.NodeManager" | grep -v grep | wc -l
+      register: datanode_status
+    
+    - name: checking NodeManager
+      fail:
+        msg: "NodeManager未启动,请登陆[{{ inventory_hostname }}],保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/"
+      when: datanode_status.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+  when: node_nums >= cluster_limit and inventory_hostname not in groups['yarn'][0:2]
+
+- block: 
+    - name: checking NodeManager status
+      shell: source /etc/profile && jps -l | grep "org.apache.hadoop.yarn.server.nodemanager.NodeManager" | grep -v grep | wc -l
+      register: datanode_status
+    
+    - name: checking NodeManager
+      fail:
+        msg: "NodeManager未启动,请登陆[{{ inventory_hostname }}],保留日志反馈，路径:{{ deploy_dir }}/{{ hadoop_version }}/logs/"
+      when: datanode_status.stdout != '1'
+      run_once: true
+      delegate_to: 127.0.0.1
+  when: node_nums < cluster_limit
+
+

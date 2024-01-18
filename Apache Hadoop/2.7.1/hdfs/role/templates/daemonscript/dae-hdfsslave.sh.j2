@@ -1,0 +1,60 @@
+#!/bin/bash
+source /etc/profile
+
+BASE_DIR={{ deploy_dir }}
+
+VERSION={{ hadoop_version }}
+
+function set_log(){
+RES_SUM_FILE=$BASE_DIR/$VERSION/logs
+
+if [ ! -f "$RES_SUM_FILE/" ]
+then
+  mkdir -p $RES_SUM_FILE
+fi
+
+if [ ! -d "$RES_SUM_FILE/$1" ];then
+  echo "0" > $RES_SUM_FILE/$1
+fi
+
+OLD_NUM=`cat $RES_SUM_FILE/$1`
+RESTART_NUM=`expr $OLD_NUM + 1`
+echo $RESTART_NUM > $RES_SUM_FILE/$1
+if [ $OLD_NUM -eq "0" ];then
+  echo "`date "+%Y-%m-%d %H:%M:%S"` - Hadoop $2服务初次启动" >> $BASE_DIR/$VERSION/logs/restart.log
+else
+  echo "`date +%Y-%m-%d` `date +%H:%M:%S` - Hadoop $2服务异常 - 重启次数 -> $RESTART_NUM." >> $BASE_DIR/$VERSION/logs/restart.log
+fi
+}
+
+
+while true ; do
+
+HAS_NN=`ps -ef | grep NameNode | grep -v grep | wc -l`
+HAS_ZKFC=`ps -ef | grep DFSZKFailoverController | grep -v grep | wc -l`
+#HAS_NM=`ps -ef | grep NodeManager | grep -v grep | wc -l`
+#HAS_RM=`ps -ef | grep ResourceManager | grep -v grep | wc -l`
+
+if [ $HAS_NN -eq "0" ];then
+  yes | $BASE_DIR/$VERSION/sbin/hadoop-daemon.sh start namenode > /dev/null
+  set_log nnRes_sum NameNode
+fi
+
+if [ $HAS_ZKFC -eq "0" ];then
+  yes | $BASE_DIR/$VERSION/sbin/hadoop-daemon.sh start zkfc > /dev/null
+  set_log zkfcRes_sum DFSZKFailoverController
+fi
+
+#if [ $HAS_NM -eq "0" ];then
+#  $BASE_DIR/$VERSION/sbin/yarn-daemon.sh start nodemanager > /dev/null
+#  set_log nmRes_sum NodeManager
+#fi
+
+#if [ $HAS_RM -eq "0" ];then
+#  $BASE_DIR/$VERSION/sbin/yarn-daemon.sh start resourcemanager > /dev/null
+#  set_log RMRes_sum ResourceManager
+#fi
+
+sleep 60
+done
+

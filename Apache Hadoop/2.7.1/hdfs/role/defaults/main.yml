@@ -1,0 +1,23 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+hadoop:
+  namenode:
+    #Running memory of the Hadoop Namenode.
+    java_opt: '-Xmx1024m -Xms1024m'
+    #The number of Namenode RPC server threads that listen to requests from clients.
+    dfs.namenode.handler.count: 30
+  datanode:
+    #Running memory of the Hadoop Datanode.
+    java_opt: '-Xmx1024m -Xms1024m'
+    #The number of server threads for the datanode.
+    dfs.datanode.handler.count: 40    
+  journalnode:
+    #Running memory of the Hadoop JournalNode.
+    java_opt: '-Xmx1024m -Xms1024m'
+  zkfc:  
+    #Running memory of the Hadoop DFSZKFailoverController.
+    java_opt: '-Xmx1024m -Xms1024m'

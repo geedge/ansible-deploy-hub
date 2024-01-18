@@ -1,0 +1,8 @@
+#镜像名称
+image_name: chproxy
+
+#镜像版本号
+image_tag: 21.06.30
+
+#容器名称
+container_name: galaxy-chproxy

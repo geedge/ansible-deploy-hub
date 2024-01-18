@@ -1,0 +1,38 @@
+- name: Loading Image
+  docker_image:
+    name: '{{ image_name }}'
+    tag: '{{ image_tag }}'
+    load_path: '{{ deploy_dir }}/{{ container_name }}/{{ image_name }}-{{ image_tag }}.tar'
+    source: load
+    force_tag: yes
+    force_source: yes
+    timeout: 300
+
+- name: Stop Container
+  docker_container:
+    name: '{{ container_name }}'
+    state: absent
+
+- name: Start Container
+  docker_compose:
+    project_src: '{{ deploy_dir }}/{{ container_name }}/'
+
+- name: Removing Image
+  docker_image:
+    name: '{{ image_name }}'
+    tag: '{{ image_tag }}'
+    state: absent
+
+- name: Loading Exporter Image
+  docker_image:
+    name: 'zookeeper_exporter'
+    tag: 'v1.0'
+    load_path: '{{ deploy_dir }}/{{ container_name }}/monitor/zookeeper_exporter-v1.0.tar'
+    source: load
+    force_tag: yes
+    force_source: yes
+    timeout: 300
+
+- name: Start Exporter Container
+  docker_compose:
+    project_src: '{{ deploy_dir }}/{{ container_name }}/monitor/'

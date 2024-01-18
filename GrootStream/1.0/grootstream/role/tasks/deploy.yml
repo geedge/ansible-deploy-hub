@@ -1,0 +1,32 @@
+- name: check Jdk version
+  shell: source /etc/profile && java -version 2>&1 | grep {{ java_version }} | wc -l
+  ignore_errors: false
+  register: jdk_out
+
+- name: To terminate execution
+  fail:
+    msg: "JDK is not installed in the target cluster, please check!"
+  when: jdk_out.stdout != '2'
+  run_once: true
+  delegate_to: 127.0.0.1
+
+- name: Create groot package path:{{ deploy_dir }}
+  file:
+    state: directory
+    path: '{{ deploy_dir }}'
+   
+- name: Unpack {{ groot_stream_version }}.zip to {{ deploy_dir }}/
+  unarchive: 
+    src: 'files/{{ groot_stream_version }}.zip'
+    dest: '{{ deploy_dir }}/'
+    
+- name: Copying config files
+  template: 
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: '{{ item.mode }}'
+    backup: false
+  with_items:
+    - { src: 'groot-stream.sh.j2', dest: '/etc/profile.d/groot-stream.sh', mode: '0755' }
+    - { src: 'grootstream.yaml.j2', dest: '{{ deploy_dir }}/{{ groot_stream_version }}/config/grootstream.yaml', mode: '0644' }
+

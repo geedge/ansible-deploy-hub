@@ -1,0 +1,15 @@
+version: '2'
+
+services:
+  kafka:
+    image: {{ image_name }}:{{ image_tag }}
+    restart: always
+    container_name: {{ container_name }}
+    environment:
+      KAFKA_JVM_MEM: "{{ kafka.java_opt }}"
+    volumes:
+    - "{{ deploy_dir }}/{{ container_name }}/config/server.properties:/opt/{{ component_version }}/config/server.properties"
+    - "{{ deploy_dir }}/{{ container_name }}/kafka-logs:/opt/{{ component_version }}/kafka-logs"
+    - "{{ deploy_dir }}/{{ container_name }}/logs:/opt/{{ component_version }}/logs"
+    network_mode: "host"
+

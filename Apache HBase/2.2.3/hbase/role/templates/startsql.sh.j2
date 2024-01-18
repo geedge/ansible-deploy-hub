@@ -1,0 +1,23 @@
+#!/bin/bash
+source /etc/profile
+
+BASE_DIR=$(cd $(dirname $0); pwd)
+
+{% for dev_info in groups.zookeeper -%}
+ {% if loop.last -%}
+{{dev_info}}
+ {% elif loop.first %}
+ZK_SERVER={{dev_info}},
+ {%- else %}
+{{dev_info}},
+ {%- endif %}
+{%- endfor %}
+
+
+cd $BASE_DIR
+
+exec python sqlline.py $ZK_SERVER <<EOF
+
+!quit
+
+EOF

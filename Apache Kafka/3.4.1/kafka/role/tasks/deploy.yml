@@ -1,0 +1,72 @@
+- name: Setting node_nums variable
+  set_fact: node_nums="{{groups.kafka|length}}"
+
+- block:
+    - name: Check the Zookeeper status
+      shell: netstat -anlp | egrep "2181" | grep LISTEN | wc -l
+      register: port_out
+      delegate_to: "{{ groups.zookeeper[0] }}"
+    
+    - name: To terminate execution
+      fail:
+       msg: "Port 2181 of the zookeeper node is not monitored. The status may be abnormal"
+      run_once: true
+      delegate_to: 127.0.0.1
+      when: port_out.stdout != '1'
+
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/{{ item.dir }}'
+  with_items:
+    - { dir: 'kafka-logs' }
+    - { dir: 'config' }
+    - { dir: 'logs' }  
+    - { dir: 'monitor' }  
+
+- name: unpack {{ component_version }}.tgz to /usr/local/
+  unarchive:
+    src: 'files/{{ component_version }}.tgz'
+    dest: '/usr/local/'
+
+- name: Copying Kafka config files
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0755
+  with_items:
+    - { src: 'kafka-operation.sh.j2', dest: '/usr/local/{{ component_version }}/bin/kafka-operation.sh' }
+    - { src: 'kafka.sh.j2', dest: '/etc/profile.d/kafka.sh' }
+    
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Loading Image
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/monitor
+  copy:
+    src: 'files/kafka_exporter-v2.0.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/monitor/'
+    force: true
+  notify:
+    - Loading Exporter Image
+
+- name: Copying Kafka config files
+  template:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+    mode: 0644
+  with_items:
+    - { src: 'server.properties.j2', dest: '{{ deploy_dir }}/{{ container_name }}/config/server.properties' }
+    - { src: 'docker-compose.yml.j2', dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml' }
+    - { src: 'docker-compose_exporter.yml.j2', dest: '{{ deploy_dir }}/{{ container_name }}/monitor/docker-compose.yml' }
+  notify:
+    - Start Container
+    - Start Exporter Container
+
+- meta: flush_handlers
+
+

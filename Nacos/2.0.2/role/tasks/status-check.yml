@@ -1,0 +1,15 @@
+- name: Waiting for the Nacos Server start,sleep 60s
+  shell: sleep 60
+
+- name: Check the Nacos node status
+  shell: source /etc/profile && curl -s http://{{ inventory_hostname }}:8847/nacos/actuator/health | grep UP | wc -l
+  register: check_nacos
+
+- name: To terminate execution
+  fail:
+   msg: "检测到{{ inventory_hostname }}节点Nacos未正常启动；请保留日志反馈，路径：{{ deploy_dir }}/{{ container_name }}/logs"
+  run_once: true
+  delegate_to: 127.0.0.1 
+  when: check_nacos.stdout != '1' 
+
+

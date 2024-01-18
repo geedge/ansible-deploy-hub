@@ -1,0 +1,32 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+#arangodb 管理用户名
+arangodb_default_username: root
+
+#arangodb 管理用户密码
+arangodb_default_pin: galaxy_2019
+
+#arangodb 管理用户密码（加密）
+arangodb_default_pin_encrypt: PBdMaxfC3u+HMzjjij2tyuJWeooSuZNW
+
+#arangodb 只读用户名
+arangodb_query_username: query
+
+#arangodb 只读用户密码  
+arangodb_query_pin: galaxy2018
+
+#arangodb 只读用户密码（加密）
+arangodb_query_pin_encrypt: qUA355VopKSx6kwwwXZwqWWEYSu76Slz
+
+#arangodb 只写用户名
+arangodb_upsert_username: upsert
+
+#arangodb 只写用户密码  
+arangodb_upsert_pin: galaxy2019
+
+#arangodb 只写用户密码（加密）
+arangodb_upsert_pin_encrypt: LDEb2OekU7iZWiFw6pUYBSozVKP27r1y

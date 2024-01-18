@@ -1,0 +1,24 @@
+version: '3.6'
+
+services:
+  cmak:
+    image: {{ image_name }}:{{ image_tag }}
+    container_name: {{ container_name }}
+    restart: always
+    command:
+      - "-Dhttp.port=9998"
+      - "-Dcmak.zkhosts={% for dev_info in groups.zookeeper -%}
+{% if loop.last -%}
+{{dev_info}}:2181
+{%- else %}
+{{dev_info}}:2181,
+{%- endif %}
+{%- endfor %}"
+      - "-DbasicAuthentication.enabled=true"
+      - "-DbasicAuthentication.username={{ cmak_default_username }}"
+      - "-DbasicAuthentication.password={{ cmak_default_pin }}"
+      - "-Djava.security.auth.login.config=/cmak/conf/kafka_client_jaas.conf"
+    volumes:
+      - "{{ deploy_dir }}/{{ container_name }}/conf/kafka_client_jaas.conf:/cmak/conf/kafka_client_jaas.conf"
+      - "{{ deploy_dir }}/{{ container_name }}/logs:/cmak/logs"
+    network_mode: "host"

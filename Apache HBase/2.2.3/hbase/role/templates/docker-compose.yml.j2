@@ -1,0 +1,45 @@
+version: "3"
+
+services:
+{% if inventory_hostname in groups['hbase'][0:3] %}
+  hmaster:
+    image: {{ image_name }}:{{ image_tag }}
+    restart: always
+    container_name: HMaster
+    hostname: {{ansible_hostname}}
+    environment:
+       MODE: master
+    volumes:
+    - "{{ deploy_dir }}/{{ container_name }}/data:/opt/hbase-2.2.3/data"
+    - "{{ deploy_dir }}/{{ container_name }}/logs:/opt/hbase-2.2.3/logs"
+    - "{{ deploy_dir }}/{{ container_name }}/conf:/opt/hbase-2.2.3/conf"
+    network_mode: "host"
+
+  regionserver:
+    image: {{ image_name }}:{{ image_tag }}
+    restart: always
+    container_name: HRegionServer
+    hostname: {{ansible_hostname}}
+    environment:
+       MODE: regionserver
+    volumes:
+    - "{{ deploy_dir }}/{{ container_name }}/data:/opt/hbase-2.2.3/data"
+    - "{{ deploy_dir }}/{{ container_name }}/logs:/opt/hbase-2.2.3/logs"
+    - "{{ deploy_dir }}/{{ container_name }}/conf:/opt/hbase-2.2.3/conf"
+    network_mode: "host"
+    depends_on: 
+      - hmaster
+{% else %}
+  regionserver:
+    image: {{ image_name }}:{{ image_tag }}
+    restart: always
+    container_name: HRegionServer
+    hostname: {{ansible_hostname}}
+    environment:
+       MODE: regionserver
+    volumes:
+    - "{{ deploy_dir }}/{{ container_name }}/data:/opt/hbase-2.2.3/data"
+    - "{{ deploy_dir }}/{{ container_name }}/logs:/opt/hbase-2.2.3/logs"
+    - "{{ deploy_dir }}/{{ container_name }}/conf:/opt/hbase-2.2.3/conf"
+    network_mode: "host"
+{% endif %}

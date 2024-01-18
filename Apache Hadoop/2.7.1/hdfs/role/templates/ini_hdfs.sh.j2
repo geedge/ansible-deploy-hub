@@ -1,0 +1,46 @@
+#!/bin/bash
+
+
+MASTER_IP={{ groups.hdfs[0] }}
+SLAVE1_IP={{ groups.hdfs[1] }}
+
+BASE_DIR={{ deploy_dir }}
+VERSION={{ hadoop_version }}
+
+function ini_namenode() {
+
+cd $BASE_DIR/$VERSION/bin
+yes | ./hadoop namenode -format
+
+if [ $? -eq "0" ];then
+# scp -r $BASE_DIR/hadoop/ root@$SLAVE1_IP:$BASE_DIR/ 
+ echo yes
+else
+ echo no
+fi
+}
+
+function ini_zk() {
+
+cd $BASE_DIR/$VERSION/bin
+yes | ./hdfs zkfc -formatZK
+
+if [ $? -eq "0" ];then
+  echo yes
+else
+  echo no
+fi
+}
+
+case $1 in
+[namenode]*)
+ini_namenode
+;;
+[zkfc]*)
+ini_zk
+;;
+* )
+echo "请输入已有的指令."
+;;
+esac
+

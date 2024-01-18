@@ -1,0 +1,43 @@
+#!/bin/bash
+source /etc/profile
+
+function killService(){
+keeppath='/etc/init.d/clickhouse-server'
+if [ -x $keeppath ];then
+service clickhouse-server stop
+fi
+}
+
+function killPid(){
+
+livenum=`rpm -qa | grep clickhouse | wc -l`
+if [ $livenum -ne 0 ];then
+service clickhouse-server stop
+rpm -e --noscripts clickhouse-server-21.8.13.1.altinitystable-2.noarch
+rpm -e --noscripts clickhouse-client-21.8.13.1.altinitystable-2.noarch
+rpm -e --noscripts clickhouse-common-static-21.8.13.1.altinitystable-2.x86_64
+fi
+
+}
+
+function drop_folder(){
+FOLDER_NAME=$1
+
+if [ -d "$FOLDER_NAME" ];then
+  rm -rf $FOLDER_NAME
+fi
+}
+
+function drop_file(){
+FILE_NAME=$1
+
+if [ -f "$FILE_NAME" ];then
+  rm -rf $FILE_NAME
+fi
+}
+
+killService
+sleep 15
+killPid
+drop_folder {{ deploy_dir }}/clickhouse
+drop_folder {{ data_dir }}/clickhouse

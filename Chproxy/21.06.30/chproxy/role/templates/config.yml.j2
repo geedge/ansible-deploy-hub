@@ -1,0 +1,58 @@
+log_debug: false
+hack_me_please: true
+server:
+  http:
+      listen_addr: ":8124"
+      read_timeout: 6h
+      idle_timeout: 10m
+users:
+  - name: "tsg_report"
+    to_cluster: "report"
+    to_user: "tsg_report"
+    password: "{{ clickhouse_default_pin }}"
+    max_queue_size: 100
+    max_queue_time: 21700s
+
+  - name: "tsg_query"
+    to_cluster: "query"
+    to_user: "tsg_query"
+    password: "{{ clickhouse_query_pin }}"
+    max_queue_size: 100
+    max_queue_time: 610s
+ 
+  - name: "default"
+    to_cluster: "report"
+    to_user: "default"
+    password: "{{ clickhouse_default_pin }}"
+    max_queue_size: 100
+    max_queue_time: 3610s
+# by default each cluster has `default` user which can be overridden by section `users`
+clusters:
+  - name: "report"
+{% if groups.clickhouse|length >= 3 %}
+    nodes: [ "{{groups.clickhouse[0]}}:8123", "{{groups.clickhouse[1]}}:8123" ]
+    masternode: 1    
+{% elif groups.clickhouse|length == 1 %}
+    nodes: [ "{{groups.clickhouse[0]}}:8123" ]
+{% endif %}
+    kill_query_user:
+        name: "default"
+        password: "{{ clickhouse_default_pin }}"
+    users:
+      - name: "default"
+        password: "{{ clickhouse_default_pin }}"
+      - name: "tsg_report"
+        password: "{{ clickhouse_default_pin }}"
+  - name: "query"
+{% if groups.clickhouse|length >= 3 %}
+    nodes: [ "{{groups.clickhouse[1]}}:8123", "{{groups.clickhouse[0]}}:8123" ]
+    masternode: 1    
+{% elif groups.clickhouse|length == 1 %}
+    nodes: [ "{{groups.clickhouse[0]}}:8123" ]
+{% endif %}
+    kill_query_user:
+        name: "default"
+        password: "galaxy2019"
+    users:
+      - name: "tsg_query"
+        password: "{{ clickhouse_query_pin }}"

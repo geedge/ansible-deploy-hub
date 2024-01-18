@@ -1,0 +1,46 @@
+#!/bin/bash
+# 
+# netconsole    This loads the netconsole module with the configured parameters.
+#
+# chkconfig:123456 40 60
+# description: keepyarnhistory
+source /etc/profile
+PRO_NAME=keepyarnhistory
+
+INS_DIR={{ deploy_dir }}
+#版本
+VERSION={{ hadoop_version }}
+
+case $1 in
+start)
+master=`ps -ef | grep "dae-yarnhistory.sh" | grep -v grep | wc -l`
+if [ $master -lt 1 ];then
+nohup $INS_DIR/$VERSION/sbin/dae-yarnhistory.sh > /dev/null 2>&1 &
+fi
+;;
+
+stop)
+HAS_KEEP_SHELL=`ps -ef | grep "dae-yarnhistory.sh" | grep -v grep | awk '{print $2}'`
+if [ $HAS_KEEP_SHELL ];then
+echo "守护进程PID：$HAS_KEEP_SHELL"
+kill -9 $HAS_KEEP_SHELL
+fi
+
+sh $INS_DIR/$VERSION/sbin/mr-jobhistory-daemon.sh stop historyserver > /dev/null
+;;
+
+status)
+HAS_HISTORY=`ps -ef | grep "org.apache.hadoop.mapreduce.v2.hs.JobHistoryServer" | grep -v grep | wc -l`
+
+if [ $HAS_HISTORY -eq "0" ];then
+echo "JobHistoryServer not running!"
+else
+echo "JobHistoryServer is running!"
+fi
+;;
+
+* )
+echo "use keepyarnhistory [start|stop|status]"
+;;
+esac
+

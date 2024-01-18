@@ -1,0 +1,16 @@
+- block: 
+    - name: Stopping and removing {{ container_name }} container
+      docker_container:
+        name: '{{ container_name }}'
+        state: absent
+    
+    - name: Removing old {{ image_name }} image
+      docker_image:
+        name: '{{ image_name }}'
+        tag: '{{ image_tag }}'
+        state: absent
+
+    - name: Ansible delete old {{ deploy_dir }}/{{ container_name }}
+      file:
+        path: '{{ deploy_dir }}/{{ container_name }}'
+        state: absent

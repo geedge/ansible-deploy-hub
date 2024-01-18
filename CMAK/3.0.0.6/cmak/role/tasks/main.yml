@@ -1,0 +1,9 @@
+- block: 
+    - include: unload.yml
+    - include: deploy.yml
+    - include: status-check.yml
+  when: (operation) == "install"
+
+- block:
+    - include: unload.yml
+  when: (operation) == "uninstall"

@@ -1,0 +1,22 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+hbase:
+  common:
+    #The HBase resource isolation function is used to group tables for storage.
+    enable_rsgroup: true
+  hmaster:
+    #Running memory of the HBase HMaster.
+    java_opt: '-Xmx1024m -Xms1024m'   
+  regionserver:
+    #Running memory of the HBase HRegionserver.
+    java_opt: '-Xmx1024m -Xms1024m -Xmn128m'
+    #This defines the number of threads the region server keeps open to serve requests to tables,It should generally be set to (number of cores - 1)
+    hbase.regionserver.handler.count: 40
+    #If any one of a column families' HStoreFiles has grown to exceed this value, the hosting HRegion is split in two.
+    hbase.hregion.max.filesize: 10737418240
+    #Indicates the memory used by all read caches. The value can be the actual memory value, expressed in MB
+    hbase.bucketcache.size: 100

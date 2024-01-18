@@ -1,0 +1,18 @@
+#!/bin/bash
+
+function del_ipaddr(){
+keepHostCheck=`ip address show {{ vrrp_instance.default.interface  }} | grep "{{ vrrp_instance.default.virtual_ipaddress }}" | wc -l`
+if [ $keepHostCheck -eq "1" ];then
+  ip address del {{ vrrp_instance.default.virtual_ipaddress }} dev {{ vrrp_instance.default.interface }}
+fi
+}
+
+
+if [ -f "/etc/keepalived/conf.d/keepalived-mariadb.conf" ];then
+  rm -rf /etc/keepalived/check_mariadb.sh
+  rm -rf /etc/keepalived/conf.d/keepalived-mariadb.conf
+  service keepalived stop && systemctl daemon-reload && sleep 3 && service keepalived start
+  del_ipaddr
+else
+  del_ipaddr
+fi

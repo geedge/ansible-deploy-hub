@@ -1,0 +1,9 @@
+#镜像名称
+image_name: cmak
+
+#镜像版本号
+image_tag: 3.0.0.6
+
+#容器名称
+container_name: cmak
+

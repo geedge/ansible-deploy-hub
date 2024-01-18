@@ -1,0 +1,13 @@
+#镜像名称
+image_name: nacos
+
+#镜像版本号
+image_tag: 2.0.2-alp
+
+#容器名称
+container_name: nacos
+
+#组件版本
+component_version: nacos-2.0.2
+
+nacos_database: nacos

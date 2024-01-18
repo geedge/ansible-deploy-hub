@@ -1,0 +1,86 @@
+#!/bin/bash
+source /etc/profile
+
+function killService(){
+keeppath='/etc/init.d/keephdfsjournal'
+if [ -x $keeppath ];then
+service keephdfsjournal stop
+chkconfig keephdfsjournal off
+systemctl daemon-reload
+rm -rf /etc/init.d/keephdfsjournal
+fi
+
+keeppath='/etc/init.d/keephdfsmaster'
+if [ -x $keeppath ];then
+service keephdfsmaster stop
+chkconfig keephdfsmaster off
+systemctl daemon-reload
+rm -rf /etc/init.d/keephdfsmaster
+fi
+
+keeppath='/etc/init.d/keephdfsslave'
+if [ -x $keeppath ];then
+service keephdfsslave stop
+chkconfig keephdfsslave off
+systemctl daemon-reload
+rm -rf /etc/init.d/keephdfsslave
+fi
+
+keeppath='/etc/init.d/keephdfsworker'
+if [ -x $keeppath ];then
+service keephdfsworker stop
+chkconfig keephdfsworker off
+systemctl daemon-reload
+rm -rf /etc/init.d/keephdfsworker
+fi
+}
+
+
+function killPid(){
+livenum=`jps -l | egrep -w "org.apache.hadoop.hdfs.qjournal.server.JournalNode" | grep -v grep |wc -l`
+if [ $livenum -ne 0 ];then
+keeppid=`jps -l |egrep -w "org.apache.hadoop.hdfs.qjournal.server.JournalNode" | awk '{print $1}'`
+kill -9 $keeppid
+fi
+
+livenum=`jps -l | egrep -w "org.apache.hadoop.hdfs.tools.DFSZKFailoverController" | grep -v grep |wc -l`
+if [ $livenum -ne 0 ];then
+keeppid=`jps -l |egrep -w "org.apache.hadoop.hdfs.tools.DFSZKFailoverController" | awk '{print $1}'`
+kill -9 $keeppid
+fi
+
+livenum=`jps -l | egrep -w "org.apache.hadoop.hdfs.server.datanode.DataNode" | grep -v grep |wc -l`
+if [ $livenum -ne 0 ];then
+keeppid=`jps -l |egrep -w "org.apache.hadoop.hdfs.server.datanode.DataNode" | awk '{print $1}'`
+kill -9 $keeppid
+fi
+
+livenum=`jps -l | egrep -w "org.apache.hadoop.hdfs.server.namenode.NameNode" | grep -v grep |wc -l`
+if [ $livenum -ne 0 ];then
+keeppid=`jps -l |egrep -w "org.apache.hadoop.hdfs.server.namenode.NameNode" | awk '{print $1}'`
+kill -9 $keeppid
+fi
+}
+
+function drop_folder(){
+FOLDER_NAME=$1
+
+if [ -d "$FOLDER_NAME" ];then
+  rm -rf $FOLDER_NAME
+fi
+}
+
+function drop_file(){
+FILE_NAME=$1
+
+if [ -f "$FILE_NAME" ];then
+  rm -rf $FILE_NAME
+fi
+}
+
+killService
+sleep 15
+killPid
+drop_folder {{ deploy_dir }}/{{ hadoop_version }}
+drop_folder {{ data_dir }}/{{ hadoop_version }}
+drop_file /etc/profile.d/hadoop.sh

@@ -1,0 +1,9 @@
+#The default installation location
+deploy_dir: /data/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/olap
+
+qgw_api: '{{ vrrp_instance.default.virtual_ipaddress }}'
+
+hos_api: '{{ vrrp_instance.oss.virtual_ipaddress }}'
