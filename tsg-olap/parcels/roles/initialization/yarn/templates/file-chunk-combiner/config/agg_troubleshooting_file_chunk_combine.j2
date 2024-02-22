@@ -1,0 +1,41 @@
+flink.job.name=agg_troubleshooting_file_chunk_combine
+
+#source相关配置
+source.kafka.parallelism=1
+#9092为无验证 9095为ssl 9094为sasl
+source.kafka.broker={{ kafka_source_servers }}
+source.kafka.group.id=agg_troubleshooting_file_chunk_combine
+source.kafka.topic=TROUBLESHOOTING-FILE-STREAM-RECORD
+#earliest从头开始 latest最新
+source.kafka.auto.offset.reset=latest
+source.kafka.session.timeout.ms=60000
+#每次拉取操作从分区中获取的最大记录数
+source.kafka.max.poll.records=100
+#消费者从单个分区中一次性获取的最大字节数
+source.kafka.max.partition.fetch.bytes=31457280
+source.kafka.enable.auto.commit=true
+#kafka SASL验证用户名
+source.kafka.user=admin
+#kafka SASL及SSL验证密码
+source.kafka.pin=galaxy2019
+#SSL需要
+source.kafka.tools.library={{ deploy_dir }}/topology/data/
+
+parse.message.pack.parallelism=1
+#窗口相关配置
+combiner.window.parallelism=1
+combiner.window.time=5
+combiner.window.idle.time=5
+combiner.window.key.max.chunk=100000
+
+#hos sink相关配置
+sink.hos.parallelism=1
+sink.hos.endpoint=http://{{ vrrp_instance.oss.virtual_ipaddress }}:9098/hos
+sink.hos.bucket=troubleshooting_file_bucket
+sink.hos.token={{ hos_token }}
+sink.hos.http.error.retry=3
+sink.hos.http.max.total=2000
+sink.hos.http.max.per.route=1000
+sink.hos.http.connect.timeout=10000
+sink.hos.http.request.timeout=10000
+sink.hos.http.socket.timeout=60000

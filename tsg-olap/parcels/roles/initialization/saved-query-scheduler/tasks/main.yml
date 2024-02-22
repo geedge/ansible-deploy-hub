@@ -1,0 +1,19 @@
+- block:
+  - include: uninstall.yml
+  - include: init.yml
+  - include: deploy.yml
+  - include: check.yml
+  when: operation == 'install'
+
+- block:
+  - include: check.yml
+  - include: backup.yml
+  - include: upgrade.yml
+  - include: init.yml
+  - include: deploy.yml
+  - include: check.yml
+  when: operation == 'upgrade'
+
+- block:
+  - include: uninstall.yml
+  when: operation == 'uninstall'

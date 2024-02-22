@@ -1,0 +1,1 @@
+services.galaxy-qgw-service.environment.JAVA_OPTS

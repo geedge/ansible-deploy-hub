@@ -1,0 +1,54 @@
+- name: Setting Project variable
+  shell: cat /etc/hostname
+  register: hostname_master_out
+  run_once: true
+  delegate_to: "{{ groups.hbase[0] }}"
+
+- name: Setting Project variable
+  shell: cat /etc/hostname
+  register: hostname_slave_out
+  run_once: true
+  delegate_to: "{{ groups.hbase[1] if groups['hbase']|length > 1 else groups.hbase[0] }}"
+
+- name: project to ansible variable
+  set_fact: 
+    hostname_master: "{{hostname_master_out.stdout}}"
+    hostname_slave: "{{hostname_slave_out.stdout}}"
+    init_path: "{{ deploy_dir }}/hbase/init"
+    container_name: 'HMaster'
+
+- name: Create {{ init_path }}
+  file:
+    path: '{{ init_path }}'
+    state: directory
+  
+- name: Copying HBase initshell files to {{ init_path }}
+  template:
+    src: '{{ item }}'
+    dest: '{{ init_path }}/{{ item }}'
+    mode: 0755
+    force: true
+  loop:
+    - create-hbase-table.sh    
+    - create-phoenix-table.sh  
+    - rsgroup.sh
+
+- name: Creating hbase table
+  shell: cd {{ init_path }} && sh create-hbase-table.sh | grep ERROR | grep -v "already exists" 
+  register: result
+  failed_when: "'ERROR' in result.stdout"
+  run_once: true
+
+- name: Creating phoenix table
+  shell: cd {{ init_path }} && sh create-phoenix-table.sh | grep ERROR | grep -v "already exists" 
+  register: result
+  failed_when: "'ERROR' in result.stdout"
+  run_once: true
+
+- name: Enable RsGroup
+  shell: cd {{ init_path }} && sh rsgroup.sh | grep ERROR | egrep -v "already exists|Target RSGroup important is same as source|Source RSGroup important is same as target" 
+  register: result
+  failed_when: "'ERROR' in result.stdout"
+  when: groups.hbase | length > 1 
+  run_once: true
+

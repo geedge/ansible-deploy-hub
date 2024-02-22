@@ -1,0 +1,14 @@
+- name: Create Nacos Namespace
+  uri:
+    url: "http://{{ vrrp_instance.default.virtual_ipaddress }}:8848/nacos/v1/console/namespaces?username=nacos&password={{ nacos_default_pin }}"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      namespaceId: ''
+      namespaceName: "{{ config_namespace }}"
+      namespaceDesc: "{{ config_namespace }}"
+      customNamespaceId: "{{ config_namespace }}"
+  retries: 3
+  delay: 3
+  run_once: true
+  when: operation == 'install'

@@ -1,0 +1,27 @@
+#kafka 接收数据topic
+source.kafka.topic=NETWORK-TRAFFIC-METRIC
+
+source.kafka.props.bootstrap.servers={{ kafka_source_servers }}
+
+source.kafka.props.group.id=app-protocol-merge-230510-1
+
+source.kafka.props.security.protocol=SASL_PLAINTEXT
+
+source.kafka.props.sasl.mechanism=PLAIN
+
+source.kafka.props.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="galaxy2019";
+
+#补全数据 输出 topic
+sink.kafka.topic=NETWORK-TRAFFIC-METRIC
+
+sink.kafka.props.bootstrap.servers={{ kafka_sink_servers }}
+
+sink.kafka.props.security.protocol=SASL_PLAINTEXT
+
+sink.kafka.props.sasl.mechanism=PLAIN
+
+sink.kafka.props.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="galaxy2019";
+
+count.window.time=5
+
+watermark.max.orderness=5

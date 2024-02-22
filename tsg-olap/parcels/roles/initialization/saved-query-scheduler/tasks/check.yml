@@ -1,0 +1,23 @@
+- name: Wait for {{ container_name }} port 9093 to become available
+  wait_for:
+    host: "{{ inventory_hostname }}"
+    port: 9093
+    state: started
+    timeout: 120
+
+- name: Request component status
+  uri:
+    url: "http://{{ inventory_hostname }}:9093/monitor"
+    body_format: "json"
+    status_code: [200]
+    return_content: true
+  register: response_health
+
+- name: parse json 
+  set_fact:
+    content_json: "{{ response_health.content | from_json }}"
+
+- name: Checking status message
+  debug:
+    msg: "{{ response_health.content }}"
+  failed_when: content_json.status != "active" and content_json.status != "standby"

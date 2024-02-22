@@ -1,0 +1,48 @@
+#!/bin/bash
+source /etc/profile
+set -e
+
+# 数据库连接参数
+upgrade_dir=${1:-$(pwd)/upgrade-phoenix}
+
+# 指定当前版本和历史版本
+current_version="{{ solution_version }}"
+old_version="{{ old_version }}"
+
+# 数据库连接参数
+phoenix_path={{ deploy_dir }}/hbase/phoenix-hbase-2.2-5.1.2-bin/bin
+
+suffix=".sql"
+# 获取更新目录中的所有SQL文件
+sql_files=$(find "${upgrade_dir}" -name "*$suffix")
+
+# 标记是否开始执行历史版本的标识
+start_execution=false
+
+# 循环处理每个SQL文件
+for file in ${sql_files}; do
+    # 从文件名中提取版本号
+    filename=$(basename "$file")
+    version=$(echo "$filename" | grep -oE '[0-9]+(\.[0-9]+)?' | tr -d '.')
+    current_version="${current_version//./}"
+    old_version="${old_version//./}"
+    # 检查是否达到历史版本
+    if [[ "${version}" -gt "${old_version}" ]]; then
+        start_execution=true
+    fi
+
+    # 检查是否开始执行历史版本之后的SQL文件
+    if [[ ${start_execution} = true ]]; then
+        echo "Executing SQL file: ${file}"
+
+        # 执行SQL文件
+        $phoenix_path/sqlline.py <"$file"
+        echo "Upgrade ${version} successfully"
+    fi
+
+    # 检查是否达到当前版本
+    if [[ "${version}" -ge "${current_version}" ]]; then
+        break
+    fi
+done
+

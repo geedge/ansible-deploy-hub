@@ -1,0 +1,4 @@
+#!/bin/bash
+
+mysql -uroot -p{{ mariadb_default_pin }} -P3306 -h{{ inventory_hostname  }} -e "create database if not exists {{ mariadb_common_database }} default character set utf8mb4 collate utf8mb4_general_ci;"
+

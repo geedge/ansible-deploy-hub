@@ -1,0 +1,27 @@
+- block:
+    - name: Checking the number of Flink tasks
+      shell: "source /etc/profile && sleep 30 && yarn application --list | grep -v 'Total number of applications' | grep RUNNING | wc -l"
+      register: jobNums
+    
+    - name: Checking the number of Flink tasks
+      fail:
+        msg: "The number of Flink running tasks does not match the record.The browser enter {{ groups.yarn[0] }}:8080 for verification."
+      when: jobNums.stdout != '11'
+  run_once: true
+  delegate_facts: true
+  delegate_to: "{{ groups.yarn[0] }}"
+  when: (groups.yarn|length ) > 1
+  
+- block:
+    - name: Checking the number of Flink tasks
+      shell: "source /etc/profile && sleep 30 && flink list | grep '(RUNNING)' | wc -l"
+      register: jobNums
+    
+    - name: Checking the number of Flink tasks
+      fail:
+        msg: "The number of Flink running tasks does not match the record.The browser enter {{ groups.yarn[0] }}:8080 for verification."
+      when: jobNums.stdout != '11'
+  run_once: true
+  delegate_facts: true
+  delegate_to: "{{ groups.yarn[0] }}"
+  when: (groups.yarn|length ) == 1

@@ -1,0 +1,24 @@
+- name: Wait for galaxy-qgw-service port 8183 to become available
+  wait_for:
+    host: "{{ inventory_hostname }}"
+    port: 8183
+    state: started
+    timeout: 120
+
+- name: Request component status
+  uri:
+    url: "http://{{ inventory_hostname }}:8183/v1/monitor/component_status"
+    body_format: "json"
+    status_code: [200,503]
+  register: response_health
+
+- name: Checking component status
+  debug:
+    msg: "{{ response_health.json.components | dict2items | json_query(query) }}"
+  vars:
+    query: "[?value.status == 'DOWN']"
+  failed_when: response_health.json.status == "DOWN"
+
+- name: Checking metadata
+  uri:
+    url: "http://{{ inventory_hostname }}:8183/v1/troubleshooting/sanity?test=schema_consistency"

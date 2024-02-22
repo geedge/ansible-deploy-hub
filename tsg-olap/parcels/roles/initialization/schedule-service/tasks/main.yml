@@ -1,0 +1,9 @@
+- block:
+    - include: uninstall.yml
+    - include: init.yml
+  when: operation=='install'
+
+- block:
+    - include: init.yml
+  when: operation=='upgrade'
+

@@ -1,0 +1,101 @@
+{
+  "type": "kafka",
+  "dataSchema": {
+    "dataSource": "traffic_shaping_rule_hits",
+    "parser": {
+      "type": "string",
+      "parseSpec": {
+        "format": "json",
+        "timestampSpec": {
+          "column": "timestamp_ms",
+          "format": "millis"
+        },
+        "dimensionsSpec": {
+          "dimensions": [
+            {"name": "vsys_id","type": "long"},
+            "device_id",
+   	    "device_group",
+            "data_center",
+            {"name": "rule_id","type": "long"},
+            {"name": "profile_id","type": "long"},
+            {"name": "priority","type": "long"}
+          ]
+        },
+	"flattenSpec": {
+  	  "useFieldDiscovery": true,
+  	  "fields": [
+                { "name": "in_bytes", "type": "path", "expr": "$.fields.in_bytes" },
+                { "name": "out_bytes", "type": "path", "expr": "$.fields.out_bytes" },
+                { "name": "in_pkts", "type": "path", "expr": "$.fields.in_pkts" },
+                { "name": "out_pkts", "type": "path", "expr": "$.fields.out_pkts" },
+                { "name": "in_drop_pkts", "type": "path", "expr": "$.fields.in_drop_pkts" },
+                { "name": "out_drop_pkts", "type": "path", "expr": "$.fields.out_drop_pkts" },
+                { "name": "in_max_latency_us", "type": "path", "expr": "$.fields.in_max_latency_us" },
+                { "name": "out_max_latency_us", "type": "path", "expr": "$.fields.out_max_latency_us" },
+                { "name": "in_queue_len", "type": "path", "expr": "$.fields.in_queue_len" },
+                { "name": "out_queue_len", "type": "path", "expr": "$.fields.out_queue_len" },
+                { "name": "vsys_id", "type": "path", "expr": "$.tags.vsys_id" },
+                { "name": "data_center", "type": "path", "expr": "$.tags.data_center" },
+                { "name": "device_group", "type": "path", "expr": "$.tags.device_group" },
+                { "name": "device_id", "type": "path", "expr": "$.tags.device_id" },
+		{ "name": "rule_id", "type": "path", "expr": "$.tags.rule_id" },
+		{ "name": "profile_id", "type": "path", "expr": "$.tags.profile_id" },
+		{ "name": "priority", "type": "path", "expr": "$.tags.priority" }
+  	  ]
+	}
+      }
+    },
+    "metricsSpec" : [
+        { "type" : "longSum", "name" : "in_bytes", "fieldName" : "in_bytes" },
+        { "type" : "longSum", "name" : "out_bytes", "fieldName" : "out_bytes" },
+        { "type" : "longSum", "name" : "in_pkts", "fieldName" : "in_pkts" },
+        { "type" : "longSum", "name" : "out_pkts", "fieldName" : "out_pkts" },
+        { "type" : "longSum", "name" : "in_drop_pkts", "fieldName" : "in_drop_pkts" },
+        { "type" : "longSum", "name" : "out_drop_pkts", "fieldName" : "out_drop_pkts" },
+        { "type" : "longMax", "name" : "in_max_latency_us", "fieldName" : "in_max_latency_us" },
+        { "type" : "longMax", "name" : "out_max_latency_us", "fieldName" : "out_max_latency_us" },
+        { "type" : "longMax", "name" : "in_queue_len", "fieldName" : "in_queue_len" },
+        { "type" : "longMax", "name" : "out_queue_len", "fieldName" : "out_queue_len" }
+  ],
+    "granularitySpec": {
+      "type": "uniform",
+      "segmentGranularity": "DAY",
+      "queryGranularity": {"type": "period", "period": "PT1S"},
+      "rollup": true
+    },
+    "transformSpec" :{
+      "transforms":[
+        {"type": "expression", "name": "in_bytes", "expression": "nvl(in_bytes, 0)"},
+        {"type": "expression", "name": "out_bytes", "expression": "nvl(out_bytes, 0)"},
+        {"type": "expression", "name": "in_pkts", "expression": "nvl(in_pkts, 0)"},
+        {"type": "expression", "name": "out_pkts", "expression": "nvl(out_pkts, 0)"},
+        {"type": "expression", "name": "in_drop_pkts", "expression": "nvl(in_drop_pkts, 0)"},
+        {"type": "expression", "name": "out_drop_pkts", "expression": "nvl(out_drop_pkts, 0)"},
+        {"type": "expression", "name": "in_max_latency_us", "expression": "nvl(in_max_latency_us, 0)"},
+        {"type": "expression", "name": "out_max_latency_us", "expression": "nvl(out_max_latency_us, 0)"},
+        {"type": "expression", "name": "in_queue_len", "expression": "nvl(in_queue_len, 0)"},
+        {"type": "expression", "name": "out_queue_len", "expression": "nvl(out_queue_len, 0)"}
+      ],
+      "filter": { "type": "selector", "dimension": "name", "value": "traffic_shaping_rule_hits" }
+    }
+  },
+  "tuningConfig": {
+    "type": "kafka",
+    "resetOffsetAutomatically": true,
+    "reportParseExceptions": false
+  },
+  "ioConfig": {
+    "topic": "POLICY-RULE-METRIC",
+    "taskCount": 1,
+    "replicas": 1,
+    "taskDuration": "PT1H",
+    "completionTimeout": "PT30M",
+    "consumerProperties": {
+      "bootstrap.servers": "kafkabootstrap",
+      "sasl.mechanism": "PLAIN",
+      "security.protocol": "SASL_PLAINTEXT",
+      "sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"admin\" password=\"galaxy2019\";"
+    }
+  }
+}
+

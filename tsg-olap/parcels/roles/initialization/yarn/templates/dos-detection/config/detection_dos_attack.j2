@@ -1,0 +1,50 @@
+#kafka source
+source.kafka.topic=DOS-SKETCH-RECORD
+source.kafka.props.bootstrap.servers={{ kafka_source_servers }}
+source.kafka.props.group.id=dos-detection-job-20240116
+source.kafka.props.session.timeout.ms=60000
+source.kafka.props.max.poll.records=5000
+source.kafka.props.max.partition.fetch.bytes=31457280
+source.kafka.props.security.protocol=SASL_PLAINTEXT
+source.kafka.props.sasl.mechanism=PLAIN
+source.kafka.props.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="admin"password="galaxy2019";
+
+#kafka sink
+kafka.sink.event.topic.name=DOS-EVENT
+kafka.sink.metric.topic=TRAFFIC-TOP-DESTINATION-IP-METRIC
+sink.kafka.props.bootstrap.servers={{ kafka_sink_servers }}
+sink.kafka.props.security.protocol=SASL_PLAINTEXT
+sink.kafka.props.sasl.mechanism=PLAIN
+sink.kafka.props.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="galaxy2019";
+sink.kafka.props.acks=1
+sink.kafka.props.retries=0
+sink.kafka.props.linger.ms=10
+sink.kafka.props.request.timeout.ms=30000
+sink.kafka.props.batch.size=262144
+sink.kafka.props.buffer.memory=134217728
+sink.kafka.props.max.request.size=10485760
+sink.kafka.props.compression.type=snappy
+
+#zookeeper地址
+hbase.zookeeper.quorum={{ zookeeper_servers }}
+
+flink.watermark.max.orderness=300
+
+#计算窗口大小，默认600s
+flink.window.max.time=600
+
+#cm服务访问地址
+bifang.server.uri=http://{{ cm_api }}
+
+knowledge.base.uri=http://{{ vrrp_instance.default.virtual_ipaddress }}:9999
+############################## 阈值 配置 ######################################
+static.sensitivity.threshold=1
+#基线敏感阈值
+baseline.sensitivity.threshold=0.2
+#基于baseline判定dos攻击的上下限
+baseline.sessions.minor.threshold=0.2
+baseline.sessions.warning.threshold=1
+baseline.sessions.major.threshold=2.5
+baseline.sessions.severe.threshold=5
+baseline.sessions.critical.threshold=8
+

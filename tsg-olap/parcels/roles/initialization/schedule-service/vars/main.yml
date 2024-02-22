@@ -1,0 +1,7 @@
+software_packages_dir: "{{ role_path }}/../software-packages"
+
+zk_servers_noport: "{% for host in groups['zookeeper'] %}{{ host }}{% if not loop.last %},{% endif %}{% endfor %}"
+zookeeper_servers: "{% for host in groups['zookeeper'] %}{{ host }}:2181{% if not loop.last %},{% endif %}{% endfor %}"
+
+perl_image_name: perl
+perl_image_tag: v3.1

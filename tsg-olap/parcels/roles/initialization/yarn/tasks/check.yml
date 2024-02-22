@@ -1,0 +1,65 @@
+- name: Get init task template
+  find:
+    paths: "templates"
+    patterns: "config"
+    file_type: directory
+    recurse: yes
+  register: find_dirctory
+  run_once: true
+  delegate_facts: true
+  delegate_to: 127.0.0.1
+
+- set_fact:
+    find_config: "{{ find_dirctory.files | map(attribute='path') | list }}"
+
+- name: Find config template
+  find:
+    paths: "{{ item }}"
+    file_type: "file"
+    recurse: yes
+  with_list: "{{ find_config }}"
+  register: find_file
+  run_once: true
+  delegate_facts: true
+  delegate_to: 127.0.0.1
+
+- set_fact:
+    init_task_list: "{{ find_file.results | json_query('[].files[].path') | map('basename') | map('regex_replace', '^(.*)\\.j2$', '\\1') | list }}"
+
+- block:
+  - name: Gets the running yarn task
+    shell: "source /etc/profile && sleep 60 && yarn application --list -appStates RUNNING | grep -v 'Total number of applications' | grep RUNNING| awk '{print $2}'"
+    register: run_task_list
+
+  - debug: var=run_task_list.stdout_lines
+
+  - name: Checking the number of Flink task
+    fail:
+      msg: "The number of Flink running tasks does not match the record.The browser enter {{ groups.yarn[0] }}:8080 for verification."
+    when: run_task_list.stdout_lines | intersect(init_task_list) |length != (init_task_list|length)
+  run_once: true
+  delegate_facts: true
+  delegate_to: "{{ groups.yarn[0] }}"
+  when: task_mode == 'yarn-per-job'
+
+- block:
+  - name: Gets the running yarn task
+    shell: source /etc/profile && sleep 60 && yarn application --list -appStates RUNNING | grep -v 'Total number of applications' | grep RUNNING| awk '{print $1}'
+    register: run_application_id
+
+  - debug: var=run_application_id.stdout
+
+  - name: Gets the running yarn task
+    shell: curl -s http://{{ groups.yarn[0] }}:8080/proxy/{{ run_application_id.stdout }}/jobs/overview| jq -r '.jobs[] | select(.state=="RUNNING") | .name'
+    register: run_task_list
+
+  - debug: var=run_task_list.stdout_lines
+
+  - name: Checking the number of Flink task
+    fail:
+      msg: "The number of Flink running tasks does not match the record.The browser enter {{ groups.yarn[0] }}:8080 for verification."
+    when: run_task_list.stdout_lines | intersect(init_task_list) |length != (init_task_list|length)
+  run_once: true
+  delegate_facts: true
+  delegate_to: "{{ groups.yarn[0] }}"
+  when: task_mode == 'yarn-session'

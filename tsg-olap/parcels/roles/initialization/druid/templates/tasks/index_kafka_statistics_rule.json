@@ -1,0 +1,367 @@
+{
+    "type": "kafka",
+    "dataSchema": {
+        "dataSource": "statistics_rule",
+        "parser": {
+            "type": "string",
+            "parseSpec": {
+                "format": "json",
+                "timestampSpec": {
+                    "column": "timestamp_ms",
+                    "format": "millis"
+                },
+                "dimensionsSpec": {
+                    "dimensions": [
+                        "device_id",
+                        "device_group",
+                        "data_center",
+                        {
+                            "name": "vsys_id",
+                            "type": "long"
+                        },
+						{
+                            "name": "rule_id",
+                            "type": "long"
+                        },
+						{
+                            "name": "template_id",
+                            "type": "long"
+                        },
+						{
+                            "name": "chart_id",
+                            "type": "long"
+                        },
+						{
+                            "name": "version",
+                            "type": "long"
+                        },
+						"client_ip_object",
+						"server_ip_object",
+						"fqdn_category",
+						"client_ip",
+						"server_ip",
+						"server_fqdn",
+						"server_domain",
+						"application"
+                    ]
+                },
+                "flattenSpec": {
+                    "useFieldDiscovery": true,
+                    "fields": [
+                        {
+                            "name": "vsys_id",
+                            "type": "path",
+                            "expr": "$.tags.vsys_id"
+                        },
+                        {
+                            "name": "data_center",
+                            "type": "path",
+                            "expr": "$.tags.data_center"
+                        },
+                        {
+                            "name": "device_group",
+                            "type": "path",
+                            "expr": "$.tags.device_group"
+                        },
+                        {
+                            "name": "device_id",
+                            "type": "path",
+                            "expr": "$.tags.device_id"
+                        },
+                        {
+                            "name": "rule_id",
+                            "type": "path",
+                            "expr": "$.tags.rule_id"
+                        },
+                        {
+                            "name": "template_id",
+                            "type": "path",
+                            "expr": "$.tags.template_id"
+                        },
+                        {
+                            "name": "chart_id",
+                            "type": "path",
+                            "expr": "$.tags.chart_id"
+                        },
+                        {
+                            "name": "version",
+                            "type": "path",
+                            "expr": "$.tags.version"
+                        },
+						{
+                            "name": "client_ip_object",
+                            "type": "path",
+                            "expr": "$.tags.client_ip_object"
+                        },
+						{
+                            "name": "server_ip_object",
+                            "type": "path",
+                            "expr": "$.tags.server_ip_object"
+                        },
+						{
+                            "name": "fqdn_category",
+                            "type": "path",
+                            "expr": "$.tags.fqdn_category"
+                        },
+						{
+                            "name": "client_ip",
+                            "type": "path",
+                            "expr": "$.tags.client_ip"
+                        },
+						{
+                            "name": "server_ip",
+                            "type": "path",
+                            "expr": "$.tags.server_ip"
+                        },
+						{
+                            "name": "server_fqdn",
+                            "type": "path",
+                            "expr": "$.tags.server_fqdn"
+                        },
+						{
+                            "name": "server_domain",
+                            "type": "path",
+                            "expr": "$.tags.server_domain"
+                        },
+						{
+                            "name": "application",
+                            "type": "path",
+                            "expr": "$.tags.application"
+                        },
+                        {
+                            "name": "in_bytes",
+                            "type": "path",
+                            "expr": "$.fields.in_bytes"
+                        },
+                        {
+                            "name": "out_bytes",
+                            "type": "path",
+                            "expr": "$.fields.out_bytes"
+                        },
+                        {
+                            "name": "bytes",
+                            "type": "path",
+                            "expr": "$.fields.bytes"
+                        },
+                        {
+                            "name": "new_c2s_flows",
+                            "type": "path",
+                            "expr": "$.fields.new_c2s_flows"
+                        },
+                        {
+                            "name": "new_s2c_flows",
+                            "type": "path",
+                            "expr": "$.fields.new_s2c_flows"
+                        },
+                        {
+                            "name": "new_in_sessions",
+                            "type": "path",
+                            "expr": "$.fields.new_in_sessions"
+                        },
+                        {
+                            "name": "new_out_sessions",
+                            "type": "path",
+                            "expr": "$.fields.new_out_sessions"
+                        },
+                        {
+                            "name": "sessions",
+                            "type": "path",
+                            "expr": "$.fields.sessions"
+                        },
+                        {
+                            "name": "new_unestablished_sessions",
+                            "type": "path",
+                            "expr": "$.fields.new_unestablished_sessions"
+                        },
+                        {
+                            "name": "syn_pkts",
+                            "type": "path",
+                            "expr": "$.fields.syn_pkts"
+                        },
+                        {
+                            "name": "session_identifier_sketch",
+                            "type": "path",
+                            "expr": "$.fields.session_identifier_sketch"
+                        },
+                        {
+                            "name": "client_ip_sketch",
+                            "type": "path",
+                            "expr": "$.fields.client_ip_sketch"
+                        },
+                        {
+                            "name": "server_ip_sketch",
+                            "type": "path",
+                            "expr": "$.fields.server_ip_sketch"
+                        },
+                        {
+                            "name": "in_latency_ms_sketch",
+                            "type": "path",
+                            "expr": "$.fields.in_latency_ms_sketch"
+                        },
+                        {
+                            "name": "out_latency_ms_sketch",
+                            "type": "path",
+                            "expr": "$.fields.out_latency_ms_sketch"
+                        },
+                        {
+                            "name": "latency_ms_sketch",
+                            "type": "path",
+                            "expr": "$.fields.latency_ms_sketch"
+                        }
+                    ]
+                }
+            }
+        },
+        "metricsSpec": [
+            {
+                "type": "HLLDSketchMerge",
+                "name": "session_identifier_sketch",
+                "fieldName": "session_identifier_sketch"
+            },
+			{
+                "type": "HLLDSketchMerge",
+                "name": "client_ip_sketch",
+                "fieldName": "client_ip_sketch"
+            },{
+                "type": "HLLDSketchMerge",
+                "name": "server_ip_sketch",
+                "fieldName": "server_ip_sketch"
+            },
+			{
+                "type": "HdrHistogramSketchMerge",
+                "name": "in_latency_ms_sketch",
+                "fieldName": "in_latency_ms_sketch",
+                 "lowestDiscernibleValue": "1",
+                "highestTrackableValue": "2",
+                "numberOfSignificantValueDigits": "3",
+                 "autoResize": "true"
+            },
+			{
+                "type": "HdrHistogramSketchMerge",
+                "name": "out_latency_ms_sketch",
+                "fieldName": "out_latency_ms_sketch",
+                 "lowestDiscernibleValue": "1",
+                 "highestTrackableValue": "2",
+                "numberOfSignificantValueDigits": "3",
+                "autoResize": "true"
+            },
+			{
+                "type": "HdrHistogramSketchMerge",
+                "name": "latency_ms_sketch",
+                "fieldName": "latency_ms_sketch",
+                 "lowestDiscernibleValue": "1",
+                "highestTrackableValue": "2",
+                "numberOfSignificantValueDigits": "3",
+                 "autoResize": "true"
+            },
+            {
+                "type": "longSum",
+                "name": "in_bytes",
+                "fieldName": "in_bytes"
+            },
+            {
+                "type": "longSum",
+                "name": "out_bytes",
+                "fieldName": "out_bytes"
+            },
+            {
+                "type": "longSum",
+                "name": "bytes",
+                "fieldName": "bytes"
+            },
+            {
+                "type": "longSum",
+                "name": "new_c2s_flows",
+                "fieldName": "new_c2s_flows"
+            },
+            {
+                "type": "longSum",
+                "name": "new_s2c_flows",
+                "fieldName": "new_s2c_flows"
+            },
+            {
+                "type": "longSum",
+                "name": "new_in_sessions",
+                "fieldName": "new_in_sessions"
+            },
+            {
+                "type": "longSum",
+                "name": "new_out_sessions",
+                "fieldName": "new_out_sessions"
+            },
+            {
+                "type": "longSum",
+                "name": "sessions",
+                "fieldName": "sessions"
+            },
+            {
+                "type": "longSum",
+                "name": "new_unestablished_sessions",
+                "fieldName": "new_unestablished_sessions"
+            },
+            {
+                "type": "longSum",
+                "name": "syn_pkts",
+                "fieldName": "syn_pkts"
+            }
+        ],
+        "granularitySpec": {
+            "type": "uniform",
+            "segmentGranularity": "DAY",
+            "queryGranularity": {
+                "type": "period",
+                "period": "PT15S"
+            },
+            "rollup": true
+        },
+        "transformSpec": {
+            "transforms": [
+                {"type": "expression", "name": "vsys_id", "expression": "nvl(vsys_id,1)"},
+                {"type": "expression", "name": "client_ip_object", "expression": "STRING_TO_ARRAY(client_ip_object,',')"},
+                {"type": "expression", "name": "server_ip_object", "expression": "STRING_TO_ARRAY(server_ip_object,',')"},
+                {"type": "expression", "name": "fqdn_category", "expression": "STRING_TO_ARRAY(fqdn_category,',')"},
+                {"type": "expression", "name": "in_bytes", "expression": "nvl(in_bytes, 0)"},
+                {"type": "expression", "name": "out_bytes", "expression": "nvl(out_bytes, 0)"},
+                {"type": "expression", "name": "bytes", "expression": "nvl(bytes, 0)"},
+                {"type": "expression", "name": "new_c2s_flows", "expression": "nvl(new_c2s_flows, 0)"},
+                {"type": "expression", "name": "new_s2c_flows", "expression": "nvl(new_s2c_flows, 0)"},
+                {"type": "expression", "name": "new_in_sessions", "expression": "nvl(new_in_sessions, 0)"},
+                {"type": "expression", "name": "new_out_sessions", "expression": "nvl(new_out_sessions, 0)"},
+                {"type": "expression", "name": "sessions", "expression": "nvl(sessions, 0)"},
+                {"type": "expression", "name": "new_unestablished_sessions", "expression": "nvl(new_unestablished_sessions, 0)"},
+                {"type": "expression", "name": "syn_pkts", "expression": "nvl(syn_pkts, 0)"}
+            ],
+            "filter": {
+                "type": "selector",
+                "dimension": "name",
+                "value": "statistics_rule"
+            }
+        }
+    },
+    "tuningConfig": {
+        "type": "kafka",
+        "maxRowsPerSegment": 5000000,
+        "maxRowsInMemory": 400000,
+        "maxBytesInMemory": -1,
+        "resetOffsetAutomatically": true,
+        "reportParseExceptions": false
+    },
+    "ioConfig": {
+        "topic": "STATISTICS-RULE-METRIC",
+        "taskCount": 2,
+        "replicas": 1,
+        "taskDuration": "PT1H",
+        "completionTimeout": "PT30M",
+        "consumerProperties": {
+            "bootstrap.servers": "kafkabootstrap",
+            "sasl.mechanism": "PLAIN",
+            "security.protocol": "SASL_PLAINTEXT",
+            "sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"admin\" password=\"galaxy2019\";"
+        }
+    },
+    "context":{
+    "druid.indexer.runner.javaOpts": "{{ druid.index_kafka_statistics_rule['druid.indexer.runner.javaOpts'] }}"
+  }
+}
+
+

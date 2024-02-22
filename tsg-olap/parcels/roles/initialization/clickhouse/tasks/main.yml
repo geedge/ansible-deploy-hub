@@ -1,0 +1,5 @@
+- include: init.yml
+  when: inventory_hostname in groups['clickhouse'][:2] and operation == "install"
+
+- include: upgrate.yml
+  when: inventory_hostname in groups['clickhouse'][:2] and operation == "upgrade"

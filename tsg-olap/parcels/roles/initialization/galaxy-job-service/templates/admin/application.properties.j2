@@ -1,0 +1,23 @@
+#配置集的配置格式
+nacos.config.type=properties
+#配置中心地址
+nacos.config.server-addr={{ vrrp_instance.default.virtual_ipaddress }}:8848
+#命名空间
+nacos.config.namespace={{ config_namespace }}
+#数据集ID
+nacos.config.data-id=galaxy-job-admin.properties
+#开启自动刷新
+nacos.config.auto-refresh=true
+#配置对应的分组
+nacos.config.group=Galaxy
+#Nacos认证用户
+nacos.config.username=nacos
+#Nacos认证密码
+nacos.config.password=nacos
+#开启配置预加载功能
+nacos.config.bootstrap.enable=true
+#开启Nacos支持日志级别的加载时机
+nacos.config.bootstrap.log-enable=true
+
+## log config
+logging.config=./config/logback.xml

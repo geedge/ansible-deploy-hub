@@ -1,0 +1,19 @@
+- name: Set kafka init path
+  set_fact:
+    init_path: '{{ deploy_dir }}/kafka/init'
+
+- name: Create kafka init path
+  file:
+    state: directory
+    path: "{{ init_path }}"
+  
+- name: Copying create_topic.sh to {{ init_path }}
+  template: 
+    src: 'create_topic.sh.j2'
+    dest: '{{ init_path }}/create_topic.sh'
+    mode: 0755
+
+- name: Creating kafka topic
+  shell:  source /etc/profile && cd {{ init_path }} && sh create_topic.sh
+  run_once: true
+

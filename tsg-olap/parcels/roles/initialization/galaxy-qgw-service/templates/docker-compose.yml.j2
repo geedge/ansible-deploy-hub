@@ -1,0 +1,14 @@
+version: "3"
+services:
+  galaxy-qgw-service:
+    image: {{ image_name }}:{{ image_tag }}
+    environment:
+      JAVA_OPTS: "{{ galaxy_qgw_service.java_opts }}"
+    container_name: {{ container_name }}
+    ports:
+      - "8183:8183"
+    volumes:
+      - "{{ deploy_dir }}/{{ container_name }}/logs:/home/tsg/galaxy/galaxy-qgw-service/logs"
+      - "{{ deploy_dir }}/{{ container_name }}/config:/home/tsg/galaxy/galaxy-qgw-service/config"
+    restart: always
+    network_mode: "host"

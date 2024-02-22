@@ -1,0 +1,45 @@
+#spark任务配置
+spark.sql.shuffle.partitions=30
+spark.executor.memory=4g
+spark.executor.cores=10
+spark.cores.max=10
+spark.local.dir=./tmp
+spark.app.name=iplearning
+spark.network.timeout=300s
+spark.serializer=org.apache.spark.serializer.KryoSerializer
+master=local[*]
+#spark读取clickhouse配置
+spark.read.clickhouse.url=jdbc:clickhouse://{{ vrrp_instance.default.virtual_ipaddress }}:8124/tsg_galaxy_v3
+spark.read.clickhouse.driver=ru.yandex.clickhouse.ClickHouseDriver
+spark.read.clickhouse.user=default
+spark.read.clickhouse.password={{ clickhouse_default_pin }}
+spark.read.clickhouse.numPartitions=5
+spark.read.clickhouse.fetchsize=10000
+spark.read.clickhouse.partitionColumn=LAST_FOUND_TIME
+spark.read.clickhouse.session.table=session_record
+spark.read.clickhouse.radius.table=radius_record
+clickhouse.socket.timeout=300000
+#arangoDB配置
+arangoDB.host={{ groups.arangodb[0] }}
+arangoDB.port=8529
+arangoDB.user=upsert
+arangoDB.password={{ arangodb_upsert_pin }}
+arangoDB.DB.name=tsg_galaxy_v3
+arangoDB.ttl=3600
+
+thread.pool.number=10
+
+#读取clickhouse时间范围方式，0：读取过去一小时；1：指定时间范围
+clickhouse.time.limit.type=0
+read.clickhouse.max.time=1634902508
+read.clickhouse.min.time=1631759985
+
+update.arango.batch=10000
+
+distinct.client.ip.num=10000
+recent.count.hour=24
+
+update.interval=3600
+arangodb.total.num=20000000
+#读取radius时间范围,与radius任务执行周期一致,单位:分钟
+read.radius.granularity=-30

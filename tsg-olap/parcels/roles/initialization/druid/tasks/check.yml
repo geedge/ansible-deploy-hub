@@ -1,0 +1,23 @@
+- name: Get druid running tasks
+  shell: curl -s http://{{ vrrp_instance.default.virtual_ipaddress }}:8089/druid/indexer/v1/supervisor?state=true | jq -r '.[] | select(.state == "RUNNING") | .id'
+  register: run_task_list
+  run_once: true
+
+- name: Get init task template
+  find:
+    paths: "templates/tasks/"
+    file_type: file
+    patterns: "*.json"
+  register: find_result
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Set init task list
+  set_fact:
+    init_task_list: "{{ find_result.files | map(attribute='path') | map('basename') | map('regex_replace', '^index_kafka_(.*)\\.json$', '\\1') | list }}"
+
+- name: Verify that the number of running tasks is correct
+  fail:
+    msg: "The number of running druid tasks is less than the normal number!"
+  when: run_task_list.stdout_lines | intersect(init_task_list) |length != (init_task_list|length)
+  run_once: true

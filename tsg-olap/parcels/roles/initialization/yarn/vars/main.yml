@@ -1,0 +1,21 @@
+task_mode: "{{ 'yarn-per-job' if groups['yarn'] |length > 1 else 'yarn-session' }}"
+
+kafka_source_servers: "{% for host in groups['kafka'] %}{{ host }}:9094{% if not loop.last %},{% endif %}{% endfor %}"
+
+kafka_sink_servers: "{{ kafka_source_servers }}"
+
+zookeeper_servers: "{% for host in groups['kafka'] %}{{ host }}:2181{% if not loop.last %},{% endif %}{% endfor %}"
+
+clickhouse_servers: "{% if groups['clickhouse'] | length < 3 %}{{ groups['clickhouse'][0] }}:9001{% else %}{% for host in groups['clickhouse'][2:] %}{{ host }}:9001{% if not loop.last %},{% endif %}{% endfor %}{% endif %}"
+
+#groot版本
+groot_stream_version: groot-stream-1.0
+
+#Jdk版本
+java_version: 1.8.0_73
+
+
+backup_path: "{{ deploy_dir }}/backup/tsg-olap/{{ old_version }}/flink"
+
+backup_items:
+  - topology

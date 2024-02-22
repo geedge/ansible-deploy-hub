@@ -1,0 +1,52 @@
+#!/bin/bash
+
+config_path_root=$1
+nacos_server={{ vrrp_instance.default.virtual_ipaddress }}
+
+tenant="{{ config_namespace }}"
+app_name="galaxy-job-service"
+
+shell_result=1
+
+# 推送配置
+function push() {
+  local config_file=$1
+  local data_id="${config_file##*/}"
+  local suffix="${config_file##*.}"
+
+  [ $suffix == "sql" ] && suffix="text"
+  [ $suffix == "yml" ] && suffix="yaml"
+
+  local nacos_push_url="http://$nacos_server:8848/nacos/v1/cs/configs?username=nacos&password=nacos&tenant=$tenant&group=Galaxy"
+  local result=$(curl --retry-delay 3 --retry 3 -sw '%{http_code}' -o /dev/null --request POST "$nacos_push_url&dataId=$data_id&appName=$app_name&type=$suffix" --data-urlencode content@"$config_file")
+  if [[ $result -eq '200' ]]; then
+    sleep 2
+    check=$(curl -sw '%{http_code}' -o /dev/null -X GET "$nacos_push_url&dataId=$data_id")
+    #echo "$check $data_id"
+
+    if [[ $check -ne '200' ]]; then
+      shell_result=0
+    fi
+  fi
+}
+
+# 获取本地文件
+function pushConfig() {
+  for config_path in $(readlink -f $config_path_root); do
+    if [ -d $config_path ]; then
+      for file in $(ls $config_path); do
+        config_path_file=$config_path/$file
+        if [ -f $config_path_file ]; then
+          push $config_path_file
+        fi
+      done
+    fi
+    if [ -f $config_path ]; then
+      push $config_path
+    fi
+  done
+}
+
+pushConfig
+echo $shell_result
+

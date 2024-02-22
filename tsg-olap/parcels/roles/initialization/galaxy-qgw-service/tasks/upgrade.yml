@@ -1,0 +1,95 @@
+- name: Check if directory exists
+  stat:
+    path: "{{ deploy_dir }}/{{ container_name }}/init"
+  register: directory_stat
+  ignore_errors: true
+
+- name: Remove files and directories
+  file:
+    path: "{{ deploy_dir }}/{{ container_name }}/init"
+    state: absent
+  when: directory_stat.stat.exists
+
+- name: Creating init directory
+  file:
+    state: directory
+    path: "{{ deploy_dir }}/{{ container_name }}/init"
+
+- name: Copying {{ container_name }} init template
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ deploy_dir }}/{{ container_name }}/init/{{ item.dest }}"
+    mode: 0755
+    force: true
+  with_items:
+    - { src: "push_config.sh.j2", dest: "push_config.sh" }
+    - { src: "create_mariadb_tables.sh.j2", dest: "create_mariadb_tables.sh" }
+    - { src: "merge-config.sh.j2", dest: "merge-config.sh" }
+    - { src: 'keys.txt', dest: 'keys.txt'}
+
+- name: Copying init files
+  copy:
+    src: "files/{{ item }}"
+    dest: "{{ deploy_dir }}/{{ container_name }}/init/"
+    force: yes
+  loop:
+    - 'data'
+    - 'schema'
+    - 'schema-upgrade-v3.1.jar'
+
+- name: Copying config files
+  copy:
+    src: "files/config/"
+    dest: "{{ deploy_dir }}/{{ container_name }}/config/"
+    force: yes
+  notify:
+    - Start Container
+
+- name: Copying config template
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ deploy_dir }}/{{ container_name }}/{{ item.dest }}"
+    force: yes
+  loop:
+    - {src: 'docker-compose.yml.j2', dest: 'init/docker-compose.yml.j2'}
+    - {src: "galaxy-qgw-service.yml.j2", dest: "init/galaxy-qgw-service.yml.j2"}
+    - {src: 'application.yml.j2', dest: 'config/application.yml'}
+    - {src: 'hazelcast.yaml.j2', dest: 'config/hazelcast.yaml'}
+  notify:
+    - Start Container
+
+- name: Merge online config 
+  shell: cd {{ deploy_dir }}/{{ container_name }}/init && sh merge-config.sh galaxy-qgw-service.yml galaxy-qgw-service.yml.j2 nacos
+
+- name: Merge online docker-compose.yml        
+  shell: cd {{ deploy_dir }}/{{ container_name }}/init && sh merge-config.sh {{ deploy_dir }}/{{ container_name }}/docker-compose.yml docker-compose.yml.j2
+
+- name: Create database
+  shell: cd {{ deploy_dir }}/{{ container_name }}/init && source /etc/profile && sh create_mariadb_tables.sh
+  run_once: true
+
+- name: Push schema to nacos
+  shell: cd {{ deploy_dir }}/{{ container_name }}/init && source /etc/profile && java -jar schema-upgrade-v3.1.jar schema/ {{ vrrp_instance.default.virtual_ipaddress }} {{ config_namespace }}
+  run_once: true
+
+- name: Push config to nacos
+  shell: 'cd {{ deploy_dir }}/{{ item.src }}/init && source /etc/profile && sh push_config.sh {{ item.conf }}'
+  register: post_result
+  until: post_result.stdout == '1'
+  retries: 3
+  delay: 3
+  failed_when: post_result.stdout != '1'
+  loop:
+    - { src: "{{ container_name }}" , conf: "galaxy-qgw-service.yml" }
+  run_once: true
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/{{ image_name }}-{{ image_tag }}.tar
+  copy:
+    src: '{{ software_packages_dir }}/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Load Image
+    - Start Container
+
+- meta: flush_handlers

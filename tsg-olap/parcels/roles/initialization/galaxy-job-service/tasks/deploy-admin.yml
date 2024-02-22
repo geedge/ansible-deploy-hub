@@ -1,0 +1,52 @@
+- name: Set container_name
+  set_fact:
+    container_name: "{{ admin_container_name }}"    
+    image_name: "{{ admin_image_name }}"
+    image_tag: "{{ admin_image_tag }}"
+
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/config'
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/
+  copy:
+    src: '{{ software_packages_dir }}/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Load Image
+    - Start Container
+
+- name: Copying {{ container_name }} config
+  template:
+    src: "admin/{{ item }}.j2"
+    dest: '{{ deploy_dir }}/{{ container_name }}/config/{{ item }}'
+    force: yes
+  loop: 
+    - application.properties
+    - logback.xml
+  notify:
+    - Start Container
+
+- name: Copying {{ container_name }} docker-compose.yml
+  template:
+    src: "admin/docker-compose.yml.j2"
+    dest: '{{ deploy_dir }}/{{ container_name }}/docker-compose.yml'
+    force: yes
+  notify:
+    - Start Container
+
+- name: Copying {{ container_name }} nginx config
+  template:
+    src: "admin/{{ container_name }}.conf.j2"
+    dest: '{{ deploy_dir }}/galaxy-gateway-nginx/conf/includes/{{ container_name }}.conf'
+    force: yes
+  notify:
+    - Start Nginx
+  delegate_to: "{{ item }}"
+  run_once: true
+  loop: "{{ groups.loadbalancer[:2] }}"
+
+- meta: flush_handlers
+

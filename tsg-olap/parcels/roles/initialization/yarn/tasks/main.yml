@@ -1,0 +1,16 @@
+- block:
+  - include: uninstall.yml
+  - include: init.yml
+  - include: check.yml
+  when: (operation) == "install"
+
+- block:
+  - include: backup.yml
+    when: inventory_hostname in groups['yarn'][:2]
+  - include: uninstall.yml
+  - include: init.yml
+  when: (operation) == "upgrade"
+
+- block:
+  - include: uninstall.yml
+  when: (operation) == "uninstall" and inventory_hostname in groups['yarn'][:2]

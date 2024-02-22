@@ -1,0 +1,46 @@
+#Source configurations
+source.kafka.topic=VOIP-RECORD
+
+source.kafka.props.bootstrap.servers={{ kafka_source_servers }}
+
+source.kafka.props.group.id=sip-rtp-correlation-20230821-1
+
+source.kafka.props.security.protocol=SASL_PLAINTEXT
+
+source.kafka.props.sasl.mechanism=PLAIN
+
+source.kafka.props.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="galaxy2019";
+
+
+#Sink configurations
+sink.kafka.topic=VOIP-CONVERSATION-RECORD
+
+sink.kafka.props.bootstrap.servers={{ kafka_sink_servers }}
+
+sink.kafka.props.security.protocol=SASL_PLAINTEXT
+
+sink.kafka.props.sasl.mechanism=PLAIN
+
+sink.kafka.props.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="galaxy2019";
+
+
+#Correlation configurations
+sip.state.clear.interval.minutes=1
+
+rtp.state.clear.interval.minutes=5
+
+#Error log configurations
+error.records.output.enable=true
+
+error.sink.kafka.topic=VOIP-CONVERSATION-RECORD
+
+error.sink.kafka.props.bootstrap.servers=192.168.45.102:9094
+
+error.sink.kafka.props.security.protocol=SASL_PLAINTEXT
+
+error.sink.kafka.props.sasl.mechanism=PLAIN
+
+error.sink.kafka.props.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="galaxy2019";
+
+include.intranet.ip=true
+

@@ -1,0 +1,25 @@
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/init'
+
+- name: Copying init files
+  template:
+    src: "{{ item.src }}.j2"
+    dest: "{{ deploy_dir }}/{{ container_name }}/init/{{ item.src }}"
+    mode: "{{ item.mode }}"
+    force: true
+  loop:
+    - { src: "push_config.sh", mode: "0755" }
+    - { src: "saved-query-scheduler.yml", mode: "0644" }  
+
+- name: Pushing config to nacos
+  shell: 'cd {{ deploy_dir }}/{{ item.src }}/init && sh push_config.sh {{ item.conf }}'
+  register: post_result
+  until: post_result.stdout == '1'
+  retries: 3
+  delay: 3
+  failed_when: post_result.stdout != '1'
+  loop: 
+    - { src: "{{ container_name }}" , conf: "saved-query-scheduler.yml" }
+  run_once: true

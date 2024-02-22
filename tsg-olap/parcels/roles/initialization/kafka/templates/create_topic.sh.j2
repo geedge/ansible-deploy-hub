@@ -1,0 +1,71 @@
+#!/bin/bash
+source /etc/profile
+
+partion_nums={{ groups.kafka | length }}
+replication_nums={{ 2 if groups.kafka | length >1 else 1 }}
+kafka_servers="{% for host in groups['kafka'] %}{{ host }}:9092{% if not loop.last %},{% endif %}{% endfor %}"
+
+common_topic=(
+  BGP-RECORD
+  DOS-EVENT
+  DOS-SKETCH-RECORD
+  NETWORK-TRAFFIC-METRIC
+  OBJECT-STATISTICS-METRIC
+  POLICY-RULE-METRIC
+  PROXY-EVENT
+  PROXY-EVENT-PROCESSED
+  PXY-EXCH-INTERMEDIA-CERT
+  SESSION-RECORD-IPFIX
+  STATISTICS-RULE-METRIC
+  SYS-STORAGE
+  TRAFFIC-FILE-STREAM-RECORD
+  TRAFFIC-TOP-DESTINATION-IP-METRIC
+  TRAFFIC-TOP-METRIC
+  TROUBLESHOOTING-FILE-STREAM-RECORD
+  VOIP-CONVERSATION-RECORD
+  VOIP-RECORD
+  VOIP-RECORD-PROCESSED
+)
+
+multi_partion_topic=(
+  TRANSACTION-RECORD
+  TRANSACTION-RECORD-PROCESSED
+  SESSION-RECORD
+  SESSION-RECORD-PROCESSED
+)
+
+function getTopic() {
+  docker exec kafka kafka-topics.sh --bootstrap-server $kafka_servers --list
+}
+
+function createTopic() {
+  exist_topic=$(echo "$exist_topic_list" | grep -wx "$3" | wc -l)
+  if [ $exist_topic -eq '0' ]; then
+    docker exec kafka kafka-topics.sh '--create' '--bootstrap-server' "$kafka_servers" '--replication-factor' $1 '--partitions' $2 '--topic' $3
+  fi
+}
+
+function checkTopic() {
+  exist_topic_list=$(getTopic)
+  all_topic=("${common_topic[@]}" "${multi_partion_topic[@]}")
+  for topic_name in ${all_topic[@]}; do
+    exist_topic=$(echo "$exist_topic_list" | grep -wx "$topic_name" | wc -l)
+    if [ $exist_topic -eq '0' ]; then
+      echo "Topic $topic_name creation failure"
+      exit 1
+    fi
+  done
+
+}
+
+exist_topic_list=$(getTopic)
+for topic_name in ${common_topic[@]}; do
+  createTopic $replication_nums $partion_nums $topic_name
+done
+
+for topic_name in ${multi_partion_topic[@]}; do
+  createTopic 1 $((partion_nums * 3)) $topic_name
+done
+
+checkTopic
+

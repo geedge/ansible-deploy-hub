@@ -1,0 +1,11 @@
+container_name: druid
+
+backup_path: "{{ deploy_dir }}/backup/tsg-olap/{{ old_version }}/{{ container_name }}"
+
+backup_items:
+  - conf
+  - docker-compose.yml
+  - init
+  - monitor
+  - topology
+

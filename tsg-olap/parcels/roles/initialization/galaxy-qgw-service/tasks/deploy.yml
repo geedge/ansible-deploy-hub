@@ -1,0 +1,47 @@
+- name: Creating config directory
+  file:
+    state: directory
+    path: "{{ deploy_dir }}/{{ container_name }}/config"
+
+- name: Copying config template
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ deploy_dir }}/{{ container_name }}/{{ item.dest }}"
+    force: yes
+  loop:
+    - {src: 'docker-compose.yml.j2', dest: 'docker-compose.yml'}
+    - {src: 'application.yml.j2', dest: 'config/application.yml'}
+    - {src: 'hazelcast.yaml.j2', dest: 'config/hazelcast.yaml'}
+  notify:
+    - Start Container
+
+- name: Copying config files
+  copy:
+    src: "files/config/"
+    dest: "{{ deploy_dir }}/{{ container_name }}/config/"
+    force: yes
+  notify:
+    - Start Container
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}/{{ image_name }}-{{ image_tag }}.tar
+  copy:
+    src: '{{ software_packages_dir }}/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Load Image
+    - Start Container
+
+- name: Copying nginx config and restart nginx
+  template:
+    src: "{{ container_name }}.conf.j2"
+    dest: "{{ deploy_dir }}/galaxy-gateway-nginx/conf/includes/{{ container_name }}.conf"
+    force: yes
+  notify:
+    - Start Nginx
+  delegate_to: "{{ item }}"
+  run_once: true
+  loop: "{{ groups.loadbalancer[:2] }}"
+
+- meta: flush_handlers
+

@@ -1,0 +1,14 @@
+version: "3"
+services:
+  saved-query-scheduler:
+    image: {{ image_name }}:{{ image_tag }}
+    container_name: {{ container_name }}
+    environment:
+      JAVA_OPTS: "{{ saved_query_scheduler.java_opts }}"
+    ports:
+      - "9093:9093"
+    volumes:
+      - "{{ deploy_dir }}/{{ container_name }}/config:/home/tsg/galaxy/saved-query-scheduler/config"
+      - "{{ deploy_dir }}/{{ container_name }}/logs:/home/tsg/galaxy/saved-query-scheduler/logs"
+    restart: always
+    network_mode: 'host'

@@ -1,0 +1,83 @@
+#!/bin/bash
+set -e
+
+host="{{ vrrp_instance.default.virtual_ipaddress }}"
+tenant="{{ config_namespace }}"
+group_id="Galaxy"
+app_name=""
+username="nacos"
+password="nacos"
+
+online_file=$1
+output_file=$1
+template_file=$2
+
+online_file=$1
+output_file=$1
+template_file=$2
+
+[[ -z $1 || -z $2 ]] && echo "Missing input file !" && exit 1
+
+function format_file {
+	local file="$1"
+	echo "format "$file
+	if [ -f "$file" ]; then
+		cat "$file" | tr -d "\r" >"$file"_new
+		mv "$file"_new $file
+	fi
+}
+
+function download_nacos_config() {
+	local data_id=$online_file
+
+	config_url="http://$host:8848/nacos/v1/cs/configs?dataId=$data_id&group=$group_id&appName=$app_name&username=$username&password=$password&tenant=$tenant"
+	online_file=nacos-"$data_id"
+	curl -s -o $online_file $config_url
+	format_file $online_file
+}
+
+function merge_yml_config() {
+	grep -v '^$' keys.txt | while IFS= read -r key; do
+		# 使用yq命令读取YAML文件中的键值
+		value=$(yq eval ".${key}" "$online_file")
+		if [[ -n $value && "$value" != "null" ]]; then
+
+			yq eval ".${key} = \"${value}\"" -i $template_file
+			echo "upgrade "$(yq eval ".${key}" $template_file)
+		fi
+
+	done
+	rm -r "$online_file"
+	mv $template_file $output_file
+	echo -e "\033[32mmerge success\033[0m"
+
+}
+
+function merge_properties_config() {
+	grep -v '^$' keys.txt | while IFS= read -r key; do
+		value=$(grep -E "^[[:blank:]]*${key}[[:blank:]]*=" "$online_file" | cut -d'=' -f1 --complement)
+		if [[ -n $value && "$value" != "null" ]]; then
+			sed -i "s/^[[:blank:]]*${key}[[:blank:]]*=\(.*\)$/${key}=$value/" $template_file
+			echo "upgrade "$(grep -E "^[[:blank:]]*${key}[[:blank:]]*=" "$template_file")
+		fi
+
+	done
+	rm -r "$online_file"
+	mv $template_file $output_file
+	echo -e "\033[32mmerge success\033[0m"
+
+}
+
+[[ $3 == 'nacos' ]] && download_nacos_config
+
+suffix="${online_file##*.}"
+
+case $suffix in
+yaml | yml)
+	merge_yml_config
+	;;
+properties)
+	merge_properties_config
+	;;
+esac
+

@@ -1,0 +1,21 @@
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/init'
+
+- name: Copying init files
+  template:
+    src: "create_database.sh.j2"
+    dest: "{{ deploy_dir }}/{{ container_name }}/init/create_database.sh"
+    mode: 0755
+    force: true
+
+- name: Creating database and collection
+  shell: 'cd {{ deploy_dir }}/{{ container_name }}/init && sh create_database.sh'
+  register: response
+  until: response.rc == 0
+  retries: 3
+  delay: 3
+  failed_when: response.rc != 0
+  run_once: true
+

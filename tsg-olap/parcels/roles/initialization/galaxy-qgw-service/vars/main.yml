@@ -1,0 +1,16 @@
+software_packages_dir: "{{ role_path }}/../software-packages"
+
+image_name: galaxy-qgw-service
+image_tag: 374
+container_name: galaxy-qgw-service
+
+backup_path: "{{ deploy_dir }}/backup/tsg-olap/{{ old_version }}/{{ container_name }}"
+
+backup_items:
+  - config
+  - docker-compose.yml
+  - init
+
+
+mariadb_common_database: tsg_olap
+zookeeper_noport: "{% for host in groups['zookeeper'] %}{{ host }}{% if not loop.last %},{% endif %}{% endfor %}:2181"

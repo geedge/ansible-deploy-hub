@@ -1,0 +1,26 @@
+software_packages_dir: "{{ role_path }}/../software-packages"
+
+admin_image_name: galaxy-job-admin
+executor_image_name: galaxy-job-executor
+
+admin_image_tag: v1.3.220308
+executor_image_tag: v1.3.231220
+
+admin_container_name: galaxy-job-admin
+executor_container_name: galaxy-job-executor
+
+
+mariadb_job_database: xxl_job
+job_executor_servers: "{% for host in groups['galaxy_job_service'] %}http://{{ host }}:8886/{% if not loop.last %},{% endif %}{% endfor %}"
+
+job_admin_servers: "{% for host in groups['galaxy_job_service'] %}http://{{ host }}:8184/xxl-job-admin{% if not loop.last %},{% endif %}{% endfor %}"
+
+kafka_sink_servers: "{% for host in groups['kafka'] %}{{ host }}:9094{% if not loop.last %},{% endif %}{% endfor %}"
+zookeeper_servers: "{% for host in groups['zookeeper'] %}{{ host }}:2181{% if not loop.last %},{% endif %}{% endfor %}"
+
+backup_path: "{{ deploy_dir }}/backup/tsg-olap/{{ old_version }}/"
+
+backup_items:
+  - config
+  - docker-compose.yml
+  - init

@@ -1,0 +1,4 @@
+- name: delete old folders
+  file:
+    state: absent
+    path: '{{ deploy_dir }}/schedule-service'

@@ -1,0 +1,11 @@
+- name: Set arangodb check variable
+  set_fact:
+     pin: "root:{{ arangodb_default_pin }}"
+
+- name: Check if collection exists in ArangoDB
+  uri:
+    url: "http://{{ groups.arangodb[0] }}:8529/_db/{{ arangodb_database }}/_api/collection/{{ item }}"
+    method: GET
+    headers:
+       Authorization: Basic {{ pin | b64encode }}
+  loop: "{{ arangodb_collections }}"

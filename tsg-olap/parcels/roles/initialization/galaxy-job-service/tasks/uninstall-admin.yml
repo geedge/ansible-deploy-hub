@@ -1,0 +1,18 @@
+- name: Stopping and removing {{ admin_container_name }} container
+  docker_container:
+    name: '{{ admin_container_name }}'
+    state: absent
+    force_kill: true
+
+- name: Removing old {{ admin_image_name }} image
+  docker_image:
+    name: '{{ admin_image_name }}'
+    tag: '{{ admin_image_tag }}'
+    state: absent
+    force_absent: true
+
+- name: Ansible delete old {{ deploy_dir }}/{{ admin_container_name }}
+  file:
+    path: '{{ deploy_dir }}/{{ admin_container_name }}'
+    state: absent
+

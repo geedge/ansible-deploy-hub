@@ -1,0 +1,30 @@
+- name: Check {{ deploy_dir }}/druid/topology
+  stat:
+    path: "{{ deploy_dir }}/druid/topology"
+  register: directory_stat
+
+- block: 
+    - name: Copying supervisor-manager.sh template
+      template:
+        src: 'supervisor-manager.sh.j2'
+        dest: '{{ deploy_dir }}/druid/topology/supervisor-manager.sh'
+        mode: 0755
+
+    - name: Stop all tasks
+      shell: cd {{ deploy_dir }}/druid/topology && sh supervisor-manager.sh terminateall
+      run_once: true
+    
+    - name: Get tasks status
+      shell: curl -s http://{{ vrrp_instance.default.virtual_ipaddress }}:8089/druid/indexer/v1/supervisor?state=true | jq 'map(select(.state = "RUNNING" ))' | jq 'length'    
+      register: tasks_count
+
+    - name: Check tasks status
+      debug: 
+        msg: "{{ tasks_count.stdout }} tasks are not stopped"
+      failed_when: tasks_count.stdout > '0'
+
+    - name: Delete {{ deploy_dir }}/druid/topology
+      file:
+         path: "{{ deploy_dir }}/druid/topology"
+         state: absent
+  when: directory_stat.stat.exists

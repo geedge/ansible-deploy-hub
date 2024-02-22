@@ -1,0 +1,1 @@
+kafka_servers: "{% for host in groups['kafka'] %}{{ host }}:9092{% if not loop.last %},{% endif %}{% endfor %}"

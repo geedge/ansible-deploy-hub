@@ -1,0 +1,51 @@
+- name: Create directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/schedule-service/{{ item }}'
+  loop:
+    - 'dos-baseline'
+    - 'iplearning'
+    - 'mmdb'
+
+- name: Unpack service to {{ deploy_dir }}/
+  unarchive:
+    src: 'files/{{ item }}'
+    dest: '{{ deploy_dir }}/schedule-service/'
+  loop: 
+    - 'dos-baseline.zip'
+    - 'iplearning.zip'
+
+- name: Copy service files
+  loop:
+    - { src: "iplearning/application.properties.j2", dest: "iplearning/application.properties", mode: "0644" }
+    - { src: "iplearning/start.sh.j2", dest: "iplearning/start.sh", mode: "0755" }
+    - { src: "dos-baseline/application.properties.j2", dest: "dos-baseline/application.properties", mode: "0644" }
+    - { src: "mmdb/mmdb-perl.pl.j2", dest: "mmdb/mmdb-perl.pl", mode: "0755" }
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ deploy_dir }}/schedule-service/{{ item.dest }}"
+    mode: "{{ item.mode }}"
+    force: true
+
+- name: Change mode and execute iplearning upconfig.sh upconfig.sh
+  shell: cd "{{ deploy_dir }}/schedule-service/iplearning/" && chmod +x upconfig.sh && sh upconfig.sh
+
+- name: Change mode and execute dosbaseline upconfig.sh
+  shell: cd "{{ deploy_dir }}/schedule-service/dos-baseline/" && chmod +x upconfig.sh && sh upconfig.sh
+
+- name: Copying perl image
+  copy:
+    src: '{{ software_packages_dir }}/{{ perl_image_name }}-{{ perl_image_tag }}.tar'
+    dest: '{{ deploy_dir }}/schedule-service/mmdb'
+    force: true
+
+- name: Load perl Image
+  docker_image:
+    name: '{{ perl_image_name }}'
+    tag: '{{ perl_image_tag }}'
+    load_path: '{{ deploy_dir }}/schedule-service/mmdb/{{ perl_image_name }}-{{ perl_image_tag }}.tar'
+    source: load
+    force_tag: yes
+    force_source: yes
+    timeout: 300
+

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+druid_ip={{ vrrp_instance.default.virtual_ipaddress }}
+druid_port=8089
+druid_monitor_prom_file={{ deploy_dir }}/node-exporter/prom/druid_monitor.prom
+
+task_name=`cat tasklist`
+
+#获取supervisor状态信息
+function getSupervisorStatus(){
+druid_supervisor_healthy_num=`curl -G -d 'state=true' -s $druid_ip:$druid_port/druid/indexer/v1/supervisor | jq '[ .[] | .state] | length'`
+echo druid_supervisor_healthy_num $druid_supervisor_healthy_num >> $druid_monitor_prom_file
+
+druid_supervisor_unhealthy_num=`curl -G -d 'state=true' -s $druid_ip:$druid_port/druid/indexer/v1/supervisor | jq '[ .[] | select(.state != "RUNNING")] | length'`
+echo druid_supervisor_unhealthy_num $druid_supervisor_unhealthy_num >> $druid_monitor_prom_file
+}
+
+#获取Druid 任务状态信息
+function getTaskStatus(){
+druid_index_running_task_num=`curl -G -d 'type=index_kafka' -s $druid_ip:$druid_port/druid/indexer/v1/runningTasks | jq '. | length'`
+echo druid_index_running_task_num $druid_index_running_task_num > $druid_monitor_prom_file
+
+druid_index_waiting_task_num=`curl -G -d 'type=index_kafka' -s $druid_ip:$druid_port/druid/indexer/v1/waitingTasks | jq '. | length'`
+echo druid_index_waiting_task_num $druid_index_waiting_task_num >> $druid_monitor_prom_file
+
+druid_index_pending_task_num=`curl -G -d 'type=index_kafka' -s $druid_ip:$druid_port/druid/indexer/v1/pendingTasks | jq '. | length'`
+echo druid_index_pending_task_num $druid_index_pending_task_num >> $druid_monitor_prom_file
+
+druid_compact_pending_task_num=`curl -G -d 'type=compact' -s $druid_ip:$druid_port/druid/indexer/v1/pendingTasks | jq '. | length'`
+echo druid_compact_pending_task_num $druid_compact_pending_task_num >> $druid_monitor_prom_file
+
+druid_compact_waiting_task_num=`curl -G -d 'type=compact' -s $druid_ip:$druid_port/druid/indexer/v1/waitingTasks | jq '. | length'`
+echo druid_compact_waiting_task_num $druid_compact_waiting_task_num >> $druid_monitor_prom_file
+}
+
+#校验正在运行的index数量，与启动时指定的index数量对比。
+#>=指定数值判断为正常 返回：0
+#反之异常 返回：1
+function checkIndexStatus(){
+druid_task_sum=0
+for var in ${task_name[@]};
+do
+	druid_task_num=`cat tasks/${var} | jq .ioConfig.taskCount`
+	druid_task_sum=`expr $druid_task_num + $druid_task_sum`
+done
+
+druid_index_task_healthy_flag=0
+if [ $druid_index_running_task_num -lt $druid_task_sum ]
+then
+	druid_index_task_healthy_flag=1
+fi
+
+echo druid_index_task_healthy_flag $druid_index_task_healthy_flag >> $druid_monitor_prom_file
+}
+
+getTaskStatus
+getSupervisorStatus
+checkIndexStatus

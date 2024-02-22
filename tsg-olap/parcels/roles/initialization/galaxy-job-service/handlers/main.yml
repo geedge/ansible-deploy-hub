@@ -1,0 +1,41 @@
+- name: Stop Container
+  docker_container:
+    name: '{{ image_name }}'
+    state: absent
+    force_kill: true
+
+- name: Remove Image
+  docker_image:
+    name: '{{ image_name }}'
+    tag: '{{ image_tag }}'
+    state: absent
+    force_absent: true
+
+- name: Copy Image
+  copy:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}'
+    force: yes
+
+- name: Unarchive Image
+  unarchive:
+    src: 'files/{{ image_name }}-{{ image_tag }}.tar.gz'
+    dest: '{{ deploy_dir }}/{{ container_name }}'
+    force: yes
+
+- name: Load Image
+  docker_image:
+    name: '{{ image_name }}'
+    tag: '{{ image_tag }}'
+    load_path: '{{ deploy_dir }}/{{ container_name }}/{{ image_name }}-{{ image_tag }}.tar'
+    source: load
+    force_tag: yes
+    force_source: yes
+    timeout: 300
+
+- name: Start Container
+  docker_compose:
+    project_src: '{{ deploy_dir }}/{{ container_name }}'
+
+- name: Start Nginx
+  shell: 'docker restart galaxy-gateway-nginx'

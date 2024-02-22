@@ -1,0 +1,24 @@
+- name: Setting clickhouse init directory
+  set_fact:
+   init_path: '{{ deploy_dir }}/clickhouse/init/'
+
+- name: Creatting clickhouse init directory
+  file:
+    path: '{{ init_path }}'
+    state: directory
+
+- name: Copying Clickhouse create tables sql
+  copy:
+    src: 'files/{{ item }}'
+    dest: '{{ init_path }}/{{ item }}'
+    force: true
+  with_items:
+    - create_ck_table.sql
+    - system.sql
+
+- name: Creating tables
+  shell: clickhouse-client -h {{ inventory_hostname }} --port 9001 -m -u default --password {{ clickhouse_default_pin }} --multiquery < {{ init_path }}/{{ item }}
+  loop:
+    - create_ck_table.sql
+    - system.sql
+  run_once: true

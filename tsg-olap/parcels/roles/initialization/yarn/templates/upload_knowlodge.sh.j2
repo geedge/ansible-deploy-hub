@@ -1,0 +1,6 @@
+curl --location --request POST 'http://{{ vrrp_instance.default.virtual_ipaddress }}:9999/v1/knowledge_base' --form 'file=@"{{ deploy_dir }}/flink/topology/data/asn_builtin.mmdb"' --form 'kb_id=f9f6bc91-2142-4673-8249-e097c00fe1ea' --form 'name=asn_builtin' --form 'format=mmdb' --form 'is_valid=1'
+
+curl --location --request POST 'http://{{ vrrp_instance.default.virtual_ipaddress }}:9999/v1/knowledge_base' --form 'file=@"{{ deploy_dir }}/flink/topology/data/ip_builtin.mmdb"' --form 'kb_id=64af7077-eb9b-4b8f-80cf-2ceebc89bea9' --form 'name=ip_builtin' --form 'format=mmdb' --form 'is_valid=1'
+
+curl --location --request POST 'http://{{ vrrp_instance.default.virtual_ipaddress }}:9999/v1/knowledge_base' --form 'file=@"{{ deploy_dir }}/flink/topology/data/ip_user_defined.mmdb"' --form 'kb_id=004390bc-3135-4a6f-a492-3662ecb9e289' --form 'name=ip_user_defined' --form 'format=mmdb' --form 'is_valid=1'
+

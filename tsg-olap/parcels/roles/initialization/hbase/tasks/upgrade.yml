@@ -1,0 +1,41 @@
+- block:
+  - name: project to ansible variable
+    set_fact:
+      upgrade_path: "{{ deploy_dir }}/hbase/upgrade"
+      container_name: 'HMaster'
+  
+  - name: Clean {{ upgrade_path }}
+    file:
+      path: '{{ upgrade_path }}'
+      state: absent
+  
+  - name: Create {{ upgrade_path }}
+    file:
+      path: '{{ upgrade_path }}'
+      state: directory
+
+  - name: Copying Upgrade files to {{ upgrade_path }}
+    copy:
+      src: "files/upgrade/"
+      dest: "{{ upgrade_path }}/"
+      force: true
+
+  - name: Copying HBase upgrade template to {{ upgrade_path }}
+    template:
+      src: '{{ item }}'
+      dest: '{{ upgrade_path }}/{{ item }}'
+      mode: 0755
+      force: true
+    loop:
+      - upgrade-hbase-data.sh
+      - upgrade-phoenix-data.sh
+  
+  - name: Upgrade hbase table data
+    shell: cd {{ upgrade_path }} && sh upgrade-hbase-data.sh 
+    run_once: true
+  
+  - name: Upgrade phoenix table data
+    shell: cd {{ upgrade_path }} && sh upgrade-phoenix-data.sh
+    run_once: true
+
+  when: inventory_hostname in groups['hbase'][:2]

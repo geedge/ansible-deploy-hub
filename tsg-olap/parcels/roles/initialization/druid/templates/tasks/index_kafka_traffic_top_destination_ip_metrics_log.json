@@ -1,0 +1,61 @@
+{
+  "type": "kafka",
+  "dataSchema": {
+    "dataSource": "traffic_top_destination_ip_metrics_log",
+    "parser": {
+      "type": "string",
+      "parseSpec": {
+        "format": "json",
+        "timestampSpec": {
+          "column": "sketch_start_time",
+          "format": "posix"
+        },
+        "dimensionsSpec": {
+          "dimensions": [
+	  "destination_ip",
+	  "attack_type",
+           { "name": "vsys_id", "type": "long" },
+	  { "type": "long", "name": "partition_num" }
+          ]
+        }
+      }
+    },
+    "metricsSpec" : [
+	{ "type" : "longSum", "name" : "session_rate","fieldName" : "session_rate"},
+        { "type" : "longSum", "name" : "packet_rate", "fieldName" : "packet_rate" },
+        { "type" : "longSum", "name" : "bit_rate", "fieldName" : "bit_rate" }
+  ],
+    "granularitySpec": {
+      "type": "uniform",
+      "segmentGranularity": "DAY",
+      "queryGranularity": {"type": "period", "period": "PT10M", "timeZone": "Asia/Hong_Kong"},
+      "rollup": true
+    },
+    "transformSpec" :{
+      "transforms":[
+        {"type": "expression","name": "vsys_id","expression": "nvl(vsys_id,1)"},
+        {"type": "expression", "name": "session_rate", "expression": "nvl(session_rate, 0)"},
+        {"type": "expression", "name": "packet_rate", "expression": "nvl(packet_rate, 0)"},
+        {"type": "expression", "name": "bit_rate", "expression": "nvl(bit_rate, 0)"}
+      ]
+    }
+  },
+  "tuningConfig": {
+    "type": "kafka",
+    "resetOffsetAutomatically": true,
+    "reportParseExceptions": false
+  },
+  "ioConfig": {
+    "topic": "TRAFFIC-TOP-DESTINATION-IP-METRIC",
+    "taskCount": 1,
+    "replicas": 1,
+    "taskDuration": "PT1H",
+    "completionTimeout": "PT30M",
+    "consumerProperties": {
+      "bootstrap.servers": "kafkabootstrap",
+      "sasl.mechanism": "PLAIN",
+      "security.protocol": "SASL_PLAINTEXT",
+      "sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"admin\" password=\"galaxy2019\";"
+    }
+  }
+}

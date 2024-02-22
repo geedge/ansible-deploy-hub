@@ -1,0 +1,14 @@
+- name: Check {{ deploy_dir }}/flink/topology
+  stat:
+    path: "{{ deploy_dir }}/flink/topology"
+  register: directory_stat
+
+- name: Stop all jobs
+  raw: yarn application -list | awk '/application_/ {print $1}' | xargs -I {} yarn application -kill {}
+  run_once: true
+
+- name: Delete {{ deploy_dir }}/flink/topology
+  file:
+     path: "{{ deploy_dir }}/flink/topology"
+     state: absent
+  when: directory_stat.stat.exists

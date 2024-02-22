@@ -1,0 +1,18 @@
+software_packages_dir: "{{ role_path }}/../software-packages"
+image_name: saved-query-scheduler
+
+image_tag: 374
+
+container_name: "{{ image_name }}"
+
+backup_path: "{{ deploy_dir }}/backup/tsg-olap/{{ old_version }}/{{ container_name }}"
+
+backup_items:
+  - config
+  - docker-compose.yml
+  - init
+
+zookeeper_servers: "{% for host in groups['zookeeper'] %}{{ host }}:2181{% if not loop.last %},{% endif %}{% endfor %}"
+
+#是否启用zookeeper 0启用(集群) 1禁用(单机)
+zookeeper_open: "{{ 0 if groups.saved_query_scheduler | length > 1 else 1 }}"

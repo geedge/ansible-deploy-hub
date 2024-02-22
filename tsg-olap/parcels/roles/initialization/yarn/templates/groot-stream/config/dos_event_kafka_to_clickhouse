@@ -1,0 +1,53 @@
+sources:
+  kafka_source:
+    type : kafka
+    # fields: # [array of object] Field List, if not set, all fields(Map<String, Object>) will be output.
+    # watermark_timestamp: common_recv_time # [string] Watermark Field Name
+    # watermark_timestamp_unit: ms # [string] Watermark Unit, default is ms
+    # watermark_lag: 60 # [number] Watermark Lag, default is 60
+    properties:
+      topic: DOS-EVENT
+      kafka.bootstrap.servers: {{ kafka_sink_servers }}
+      kafka.session.timeout.ms: 60000
+      kafka.max.poll.records: 3000
+      kafka.max.partition.fetch.bytes: 31457280
+      kafka.security.protocol: SASL_PLAINTEXT
+      kafka.ssl.keystore.location:
+      kafka.ssl.keystore.password:
+      kafka.ssl.truststore.location:
+      kafka.ssl.truststore.password:
+      kafka.ssl.key.password:
+      kafka.sasl.mechanism: PLAIN
+      kafka.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="galaxy2019";
+      kafka.buffer.memory:
+      kafka.group.id: dos_event_kafka_to_clickhouse-20231221
+      kafka.auto.offset.reset: latest
+      kafka.max.request.size:
+      kafka.compression.type: none
+      format: json
+
+
+sinks:
+  clickhouse_sink:
+    type: clickhouse
+    properties:
+      host: {{ clickhouse_servers }}
+      table: tsg_galaxy_v3.dos_event_local
+      batch.size: 100000
+      batch.interval: 30s
+      connection.user: default
+      connection.password: galaxy2019
+
+
+application:
+
+  env: # [object] Environment Variables
+    name: dos_event_kafka_to_clickhouse # [string] Job Name
+    pipeline:
+      object-reuse: true # [boolean] Object Reuse, default is false
+  topology:
+    - name: kafka_source
+      downstream: [clickhouse_sink]
+    - name: clickhouse_sink
+
+

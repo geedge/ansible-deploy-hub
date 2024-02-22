@@ -1,0 +1,87 @@
+#!/bin/bash
+
+COMMON_PATH={{ deploy_dir }}/{{ qgw_soft_home_path }}
+
+function push_knowledge_file(){
+FILE_NAME=$1
+FILE_PATH=$2
+TYPE=$3
+FORMAT=$4
+
+curl_result=$(curl -s --retry-delay 3 --retry 3 --location --request POST 'http://{{ vrrp_instance.default.virtual_ipaddress }}:9999/knowledge_base/v1' --form 'file=@"'$FILE_PATH'/'$FILE_NAME'.'$FORMAT'"' --form 'name='$FILE_NAME'' --form 'format='$FORMAT'' --form 'type='$TYPE'' | jq '.status')
+
+if [[ $curl_result -ne '200' ]];then
+  echo 0
+  echo "The $FILE_NAME.$FORMAT upload to the knowledge base failed."
+  exit 1
+fi
+}
+
+function push_knowledge_csv(){
+ID=$1
+NAME=$2
+TYPE=$3
+
+curl_result=$(curl -s --location --request POST 'http://{{ vrrp_instance.default.virtual_ipaddress }}:9999/knowledge_base/v1' \
+--form 'file=@"./data/'$NAME'.csv"' --form 'name='$NAME'' --form 'format=csv' --form 'type='$TYPE'' --form 'id='$ID'' | jq '.status')
+
+if [[ $curl_result -ne '200' ]];then
+  echo 0
+  echo "The $FILE_NAME.$FORMAT upload to the knowledge base failed."
+  exit 1
+fi
+}
+
+function push_knowledge_mmdb(){
+ID=$1
+NAME=$2
+TYPE=$3
+
+curl_result=$(curl -s --location --request POST 'http://{{ vrrp_instance.default.virtual_ipaddress }}:9999/knowledge_base/v1' \
+--form 'file=@"./data/'$TYPE'.mmdb"' --form 'name='$NAME'' --form 'format=mmdb' --form 'type='$TYPE'' --form 'id='$ID'' | jq '.status')
+
+if [[ $curl_result -ne '200' ]];then
+  echo 0
+  echo "The $FILE_NAME.$FORMAT upload to the knowledge base failed."
+  exit 1
+fi
+}
+
+function pushConfig(){
+
+{% if project == "tsg" %}
+push_knowledge_file asn_v4 $COMMON_PATH/data asn mmdb
+push_knowledge_file asn_v6 $COMMON_PATH/data asn mmdb
+push_knowledge_file ip_v4_built_in $COMMON_PATH/data ip_location mmdb
+push_knowledge_file ip_v4_user_defined $COMMON_PATH/data ip_location mmdb
+push_knowledge_file ip_v6_built_in $COMMON_PATH/data ip_location mmdb
+push_knowledge_file ip_v6_user_defined $COMMON_PATH/data ip_location mmdb
+{% endif %}
+
+
+{% if project == "cn" %}
+push_knowledge_csv 3 cn_dns_server_info_built_in cn_dns_server_info_built_in
+push_knowledge_csv 4 cn_fqdn_icp_built_in cn_fqdn_icp_built_in
+push_knowledge_csv 5 cn_fqdn_category_built_in cn_fqdn_category_built_in
+push_knowledge_csv 6 cn_fqdn_who_is_built_in cn_fqdn_who_is_built_in
+push_knowledge_csv 7 cn_ioc_malware cn_ioc_malware
+push_knowledge_csv 8 cn_ioc_darkweb cn_ioc_darkweb
+push_knowledge_csv 9 cn_app_category_built_in cn_app_category_built_in
+push_knowledge_csv 10 cn_psiphon3_ip cn_psiphon3_ip
+push_knowledge_csv 11 cn_idc_renter_built_in cn_idc_renter_built_in
+push_knowledge_csv 12 cn_internal_ip_built_in cn_internal_ip_built_in
+push_knowledge_csv 13 cn_link_direction_built_in cn_link_direction_built_in
+
+
+push_knowledge_mmdb 16266e3e2aff061d cn_ip_location_built_in cn_ipv4_location_built_in
+push_knowledge_mmdb f8e1f4021a069b7d cn_ip_location_built_in cn_ipv6_location_built_in
+push_knowledge_mmdb 15a614c6f12f1ad5 cn_ip_asn_built_in cn_ipv4_asn_built_in
+push_knowledge_mmdb f4b2ed071a57b35c cn_ip_asn_built_in cn_ipv6_asn_built_in
+
+{% endif %}
+
+}
+
+pushConfig
+
+echo 1

@@ -1,0 +1,16 @@
+hazelcast:
+  cluster-name: qgw-cluster
+  network:
+    join:
+      multicast:
+        enabled: false
+      tcp-ip:
+        enabled: true
+        member-list:
+{% for host in groups['galaxy_qgw_service'] %}
+          - {{ host }}
+{% endfor %}
+  map:
+    adHocCache:
+      time-to-live-seconds: 120
+

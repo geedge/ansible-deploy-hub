@@ -1,0 +1,54 @@
+- name: Creating config tmp directory
+  file:
+    state: directory
+    path: "/tmp/{{ item }}"
+  loop: 
+    - "{{ admin_container_name }}"
+    - "{{ executor_container_name }}"
+
+- name: Creating upgrade directory
+  file:
+    state: directory
+    path: "{{ deploy_dir }}/{{ executor_container_name }}/upgrade/upgrade-sql"
+
+- name: Fetching config files
+  fetch:
+    src: "{{ deploy_dir }}/{{ item.name }}/{{ item.config }}"
+    dest: "/tmp/{{ item.name }}/{{ item.config }}"
+    flat: yes
+  loop:
+    - { name: "{{ admin_container_name }}", config: 'docker-compose.yml' }
+    - { name: "{{ executor_container_name }}", config: 'docker-compose.yml' }
+
+- name: Loading variable by admin docker-compose.yml
+  include_vars:
+    file: "/tmp/{{ admin_container_name }}/docker-compose.yml"
+    name: admin_docker_config
+
+- name: Loading variable by executor docker-compose.yml
+  include_vars:
+    file: "/tmp/{{ executor_container_name }}/docker-compose.yml"
+    name: executor_docker_config
+
+- name: Set variable 
+  set_fact:
+    galaxy_job_service:
+      admin_java_opts: "{{ admin_docker_config['services']['galaxy-job-admin']['environment']['JAVA_OPTS'] }}"
+      executor_java_opts: "{{ executor_docker_config['services']['galaxy-job-executor']['environment']['JAVA_OPTS'] }}"
+
+- name: Copying upgrade sql file
+  copy:
+    src: 'files/upgrade-sql'
+    dest: '{{ deploy_dir }}/{{ executor_container_name }}/upgrade/'
+    force: true
+
+- name: Copying upgrade-mariadb-data.sh template
+  template:
+    src: "upgrade-mariadb-data.sh.j2"
+    dest: "{{ deploy_dir }}/{{ executor_container_name }}/upgrade/upgrade-mariadb-data.sh"
+    mode: 0755
+    force: true
+
+- name: Upgrade mariadb data 
+  shell: cd {{ deploy_dir }}/{{ executor_container_name }}/upgrade && sh upgrade-mariadb-data.sh
+  run_once: true

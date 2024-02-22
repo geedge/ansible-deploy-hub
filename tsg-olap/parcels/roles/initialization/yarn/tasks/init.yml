@@ -1,0 +1,154 @@
+- name: Set tasks directory variable
+  set_fact:
+    task_dir:
+      - app-protocol-stat-traffic-merge
+      - dos-detection
+      - file-chunk-combiner
+      - groot-stream
+      - sip-rtp-correlation
+      - topn-metrics-job
+    sub_dir:
+      - bin
+      - config
+      - env
+      - lib
+
+- name: Create yarn session
+  shell: source /etc/profile && yarn-session.sh -d
+  run_once: true
+  when: task_mode == 'yarn-session'
+ 
+- name: Create {{ deploy_dir }}/flink/topology
+  file:
+    path: "{{ deploy_dir }}/flink/topology"
+    state: directory
+
+- name: Unpack Knowledge base files
+  unarchive:
+    src: 'files/data.zip'
+    dest: '{{ deploy_dir }}/flink/topology/'
+
+- block: 
+    - name: Create {{ deploy_dir }}/flink/topology
+      file:
+        path: "{{ deploy_dir }}/flink/topology/{{ item.0 }}/{{ item.1 }}"
+        state: directory
+      with_nested:
+        - "{{ task_dir }}"
+        - "{{ sub_dir }}"
+      changed_when: false
+
+    - name: Unpack Knowledge base files
+      unarchive:
+        src: 'files/data.zip'
+        dest: '{{ deploy_dir }}/flink/topology/'
+
+    - name: Copying upload_knowlodge.sh
+      template:
+        src: 'upload_knowlodge.sh.j2'
+        dest: '{{ deploy_dir }}/flink/topology/upload_knowlodge.sh'
+        force: true
+        mode: 0755
+
+    - name: upload Knowledge
+      shell: cd {{ deploy_dir }}/flink/topology/ && sh upload_knowlodge.sh
+      run_once: true
+
+    - name: Copying topology to {{ deploy_dir }}/
+      copy:
+        src: 'files/topology'
+        dest: '{{ deploy_dir }}/flink/'
+        force: true
+  
+    - name: Copying jobs config files
+      template:
+        src: "{{ item.name }}/config/{{ item.config }}.j2"
+        dest: "{{ deploy_dir }}/flink/topology/{{ item.name }}/config/{{ item.config }}"
+        force: true
+      with_items: 
+        - { name: 'app-protocol-stat-traffic-merge', config: 'agg_app_protocol_traffic' }
+        - { name: 'dos-detection', config: 'detection_dos_attack' }
+        - { name: 'file-chunk-combiner', config: 'agg_traffic_file_chunk_combine' }
+        - { name: 'file-chunk-combiner', config: 'agg_troubleshooting_file_chunk_combine' }
+        - { name: 'sip-rtp-correlation', config: 'correlation_sip_rtp_session' }
+        - { name: 'topn-metrics-job', config: 'agg_session_record_topn' }
+
+    - name: Copying jobs env files
+      template:
+        src: "{{ item.name }}/env/{{ item.config }}.sh"
+        dest: "{{ deploy_dir }}/flink/topology/{{ item.name }}/env/{{ item.config }}.sh"
+        mode: 0755
+        force: true
+      with_items: 
+        - { name: 'app-protocol-stat-traffic-merge', config: 'agg_app_protocol_traffic' }
+        - { name: 'dos-detection', config: 'detection_dos_attack' }
+        - { name: 'file-chunk-combiner', config: 'agg_traffic_file_chunk_combine' }
+        - { name: 'file-chunk-combiner', config: 'agg_troubleshooting_file_chunk_combine' }
+        - { name: 'sip-rtp-correlation', config: 'correlation_sip_rtp_session' }
+        - { name: 'topn-metrics-job', config: 'agg_session_record_topn' }
+
+    - name: Copying jobs start.sh
+      template:
+        src: "start.sh"
+        dest: "{{ deploy_dir }}/flink/topology/{{ item.name }}/bin/start.sh"
+        force: true
+        mode: 0755
+      with_items:
+        - { name: 'app-protocol-stat-traffic-merge' }
+        - { name: 'dos-detection' }
+        - { name: 'file-chunk-combiner' }
+        - { name: 'sip-rtp-correlation' }
+        - { name: 'topn-metrics-job' }
+
+    - name: Copying jobs stop.sh
+      template:
+        src: "stop.sh"
+        dest: "{{ deploy_dir }}/flink/topology/{{ item.name }}/bin/stop.sh"
+        force: true
+        mode: 0755
+      with_items:
+        - { name: 'app-protocol-stat-traffic-merge' }
+        - { name: 'dos-detection' }
+        - { name: 'file-chunk-combiner' }
+        - { name: 'groot-stream' }
+        - { name: 'sip-rtp-correlation' }
+        - { name: 'topn-metrics-job' }
+
+    - name: Copying groot start.sh
+      template:
+        src: "{{ item.name }}/start.sh"
+        dest: "{{ deploy_dir }}/flink/topology/{{ item.name }}/bin/start.sh"
+        force: true
+        mode: 0755
+      with_items:
+        - { name: 'groot-stream' }
+
+    - name: Copying groot config templates
+      template:
+        src: "{{ item }}"
+        dest: "{{ deploy_dir }}/flink/topology/groot-stream/config/{{ item | basename | regex_replace('.j2$', '') }}"
+        mode: "0644"
+        force: true
+      with_fileglob: "templates/groot-stream/config/*"
+      
+    - name: Copying groot env templates
+      template:
+        src: "{{ item }}"
+        dest: "{{ deploy_dir }}/flink/topology/groot-stream/env/{{ item | basename }}"
+        mode: "0755"
+        force: true
+      with_fileglob: "templates/groot-stream/env/*"
+
+    - name: Starting flink tasks
+      shell: cd '{{ deploy_dir }}/flink/topology/{{ item.name }}/bin' && chmod +x *.sh && ./stop.sh && ./start.sh
+      with_items:
+        - { name: 'groot-stream' }
+        - { name: 'app-protocol-stat-traffic-merge' }
+        - { name: 'dos-detection' }
+        - { name: 'file-chunk-combiner' }
+        - { name: 'sip-rtp-correlation' }
+        - { name: 'topn-metrics-job' }
+      run_once: true
+
+  when: inventory_hostname in groups['yarn'][:2]
+

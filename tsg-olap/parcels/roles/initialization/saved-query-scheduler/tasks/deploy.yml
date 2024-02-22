@@ -1,0 +1,29 @@
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ container_name }}/config'
+
+- name: Copying config
+  template:
+    src: "{{ item.src }}"
+    dest: '{{ deploy_dir }}/{{ container_name }}/{{ item.dest }}'
+    force: yes
+  loop: 
+    - { src: 'application.yml.j2', dest: 'config/application.yml' }
+    - { src: 'log4j2-dev.xml.j2', dest: 'config/log4j2-dev.xml' }
+    - { src: 'docker-compose.yml.j2', dest: 'docker-compose.yml' }
+  notify:
+    - Start Container
+
+- name: Copying image to {{ deploy_dir }}/{{ container_name }}
+  copy:
+    src: '{{ software_packages_dir }}/{{ image_name }}-{{ image_tag }}.tar'
+    dest: '{{ deploy_dir }}/{{ container_name }}/'
+    force: true
+  notify:
+    - Load Image
+    - Start Container
+
+
+- meta: flush_handlers
+

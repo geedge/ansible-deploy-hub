@@ -1,0 +1,43 @@
+#!/bin/bash
+source /etc/profile
+
+source /etc/profile
+
+jar_name="ip-learning-spark.jar"
+java_opts="-Xms1g -Xmx5g"
+iplearning_home=/opt/schedule-service/iplearning
+
+isrun=$(pgrep -f ip-learning-spark.jar | wc -l)
+
+#start spark job
+function startJob() {
+        mkdir -p $iplearning_home/logs/IpLearningApplication
+        mkdir -p $iplearning_home/logs/IpRecommendApplication
+
+        echo "IpLearningApplication 程序运行 - $(date "+%Y-%m-%d %H:%M:%S")" >>$iplearning_home/logs/IpLearningApplication/running-$(date +'%Y-%m').log
+        nohup /usr/lib/jvm/jdk1.8.0_73/bin/java -cp $iplearning_home/$jar_name $java_opts cn.ac.iie.main.IpLearningApplication >>$iplearning_home/logs/IpLearningApplication/running-$(date +'%Y-%m').log
+
+        echo "IpRecommendApplication 程序运行 - $(date "+%Y-%m-%d %H:%M:%S")" >>$iplearning_home/logs/IpRecommendApplication/running-$(date +'%Y-%m').log
+        nohup /usr/lib/jvm/jdk1.8.0_73/bin/java -cp $iplearning_home/$jar_name $java_opts cn.ac.iie.main.IpRecommendApplication >>$iplearning_home/logs/IpRecommendApplication/running-$(date +'%Y-%m').log
+
+}
+
+if [[ $isrun -ge 1 ]]; then
+        OLD_NUM=$(cat $iplearning_home/runnum)
+        RESTART_NUM=$(expr $OLD_NUM + 1)
+        echo $RESTART_NUM >$iplearning_home/runnum
+
+        if [ $RESTART_NUM -gt "2" ]; then
+                pgrep -f ip-learning-spark.jar | xargs kill -9
+                startJob
+
+                echo 1 >$iplearning_home/runnum
+        fi
+
+else
+
+        startJob
+        echo 1 >$iplearning_home/runnum
+        nohup $iplearning_home/iplearning_monitor.sh >/dev/null 2>&1 &
+
+fi

@@ -1,0 +1,161 @@
+sources:
+  kafka_source:
+    type : kafka
+    # fields: # [array of object] Field List, if not set, all fields(Map<String, Object>) will be output.
+    # watermark_timestamp: common_recv_time # [string] Watermark Field Name
+    # watermark_timestamp_unit: ms # [string] Watermark Unit, default is ms
+    # watermark_lag: 60 # [number] Watermark Lag, default is 60
+    properties:
+      topic: PROXY-EVENT
+      kafka.bootstrap.servers: {{ kafka_sink_servers }}
+      kafka.session.timeout.ms: 60000
+      kafka.max.poll.records: 3000
+      kafka.max.partition.fetch.bytes: 31457280
+      kafka.security.protocol: SASL_PLAINTEXT
+      kafka.ssl.keystore.location:
+      kafka.ssl.keystore.password:
+      kafka.ssl.truststore.location:
+      kafka.ssl.truststore.password:
+      kafka.ssl.key.password:
+      kafka.sasl.mechanism: PLAIN
+      kafka.sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="galaxy2019";
+      kafka.buffer.memory:
+      kafka.group.id: etl_proxy_event_kafka_to_clickhouse-20231221
+      kafka.auto.offset.reset: latest
+      kafka.max.request.size:
+      kafka.compression.type: none
+      format: json
+
+processing_pipelines:
+  etl_processor: # [object] Processing Pipeline
+    type: com.geedgenetworks.core.processor.projection.ProjectionProcessorImpl
+    remove_fields:
+    output_fields:
+    properties:
+      key: value
+    functions: # [array of object] Function List
+
+      - function: ASN_LOOKUP
+        lookup_fields: [ server_ip ]
+        output_fields: [ server_asn ]
+        parameters:
+          option: IP_TO_ASN
+          kb_name: tsg_ip_asn
+
+      - function: ASN_LOOKUP
+        lookup_fields: [ client_ip ]
+        output_fields: [ client_asn ]
+        parameters:
+          option: IP_TO_ASN
+          kb_name: tsg_ip_asn
+
+      - function: SNOWFLAKE_ID
+        lookup_fields: [ '' ]
+        output_fields: [ log_id ]
+        parameters:
+          data_center_id_num: 1
+
+      - function: JSON_EXTRACT
+        lookup_fields: [ device_tag ]
+        output_fields: [ data_center ]
+        filter:
+        parameters:
+          value_expression: $.tags[?(@.tag=='data_center')][0].value
+
+      - function: JSON_EXTRACT
+        lookup_fields: [ device_tag ]
+        output_fields: [ device_group ]
+        filter:
+        parameters:
+          value_expression: $.tags[?(@.tag=='device_group')][0].value
+
+      - function: CURRENT_UNIX_TIMESTAMP
+        output_fields: [ processing_time ]
+        parameters:
+          precision: seconds
+
+      - function: UNIX_TIMESTAMP_CONVERTER
+        lookup_fields: [ __timestamp ]
+        output_fields: [ recv_time ]
+        parameters:
+          precision: seconds
+
+      - function: EVAL
+        output_fields: [ ingestion_time ]
+        parameters:
+          value_expression: 'recv_time'
+
+      - function: DOMAIN
+        lookup_fields: [ http_host,ssl_sni,dtls_sni,quic_sni ]
+        output_fields: [ server_domain ]
+        parameters:
+          option: FIRST_SIGNIFICANT_SUBDOMAIN
+
+      - function: BASE64_DECODE_TO_STRING
+        output_fields: [mail_subject]
+        parameters:
+          value_field: mail_subject
+          charset_field: mail_subject_charset
+
+      - function: BASE64_DECODE_TO_STRING
+        output_fields: [mail_attachment_name]
+        parameters:
+          value_field: mail_attachment_name
+          charset_field: mail_attachment_name_charset
+
+      - function: PATH_COMBINE
+        lookup_fields: [ rtp_pcap_path ]
+        output_fields: [ rtp_pcap_path ]
+        parameters:
+          path: [ props.hos.path, props.hos.bucket.name.traffic_file, rtp_pcap_path ]
+
+      - function: PATH_COMBINE
+        lookup_fields: [ http_request_body ]
+        output_fields: [ http_request_body ]
+        parameters:
+          path: [ props.hos.path, props.hos.bucket.name.traffic_file, http_request_body ]
+
+      - function: PATH_COMBINE
+        lookup_fields: [ http_response_body ]
+        output_fields: [ http_response_body ]
+        parameters:
+          path: [ props.hos.path, props.hos.bucket.name.traffic_file, http_response_body ]
+
+      - function: PATH_COMBINE
+        lookup_fields: [ mail_eml_file ]
+        output_fields: [ mail_eml_file ]
+        parameters:
+          path: [ props.hos.path, props.hos.bucket.name.traffic_file, mail_eml_file ]
+
+      - function: PATH_COMBINE
+        lookup_fields: [ packet_capture_file ]
+        output_fields: [ packet_capture_file ]
+        parameters:
+          path: [ props.hos.path, props.hos.bucket.name.traffic_file, packet_capture_file ]
+
+sinks:
+  clickhouse_sink:
+    type: clickhouse
+    properties:
+      host: {{ clickhouse_servers }}
+      table: tsg_galaxy_v3.proxy_event_local
+      batch.size: 100000
+      batch.interval: 30s
+      connection.user: default
+      connection.password: galaxy2019
+
+
+application:
+
+  env: # [object] Environment Variables
+    name: etl_proxy_event_kafka_to_clickhouse # [string] Job Name
+    pipeline:
+      object-reuse: true # [boolean] Object Reuse, default is false
+  topology:
+    - name: kafka_source
+      downstream: [etl_processor]
+    - name: etl_processor
+      downstream: [clickhouse_sink]
+    - name: clickhouse_sink
+
+

@@ -1,0 +1,85 @@
+############## 数据库配置 ###############
+##########################################
+#Druid配置
+druid.url=jdbc:avatica:remote:url=http://{{ vrrp_instance.default.virtual_ipaddress }}:8082/druid/v2/sql/avatica/
+druid.driver=org.apache.calcite.avatica.remote.Driver
+druid.table=traffic_top_destination_ip_metrics_log
+
+#HBase配置
+hbase.table=dos:ddos_traffic_baselines
+hbase.zookeeper.quorum={{ zookeeper_servers }}
+hbase.zookeeper.client.port=2181
+
+##########################################
+############## Druid数据读取 ###############
+##########################################
+#读取druid时间范围方式，
+# 0：读取默认范围天数read.historical.days；
+# 1：指定时间范围
+read.druid.time.limit.type=0
+read.druid.min.time=1663430400000
+read.druid.max.time=1663603200000
+
+#Druid字段映射
+druid.attacktype.tcpsynflood=TCP SYN Flood
+druid.attacktype.udpflood=UDP Flood
+druid.attacktype.icmpflood=ICMP Flood
+druid.attacktype.dnsamplification=DNS Flood
+druid.columnname.serverip=destination_ip
+druid.columnname.vsysid=vsys_id
+druid.columnname.attacktype=attack_type
+druid.columnname.recvtime=__time
+druid.columnname.partition.num=partition_num
+baseline.metric.type=session_rate
+#baseline存储级别，1-type1;2-type1及type2;3-all
+baseline.save.level=3
+
+#Hbase字段映射
+hbase.baseline.generation.type.suffix=baseline_type
+hbase.baseline.zero.replace.value.suffix=default_value
+
+#数据情况
+#读取历史N天数据，最小值为3天（需要判断周期性）
+read.historical.days=3
+#历史数据汇聚粒度为10分钟
+historical.grad=10
+# 数据库Time格式
+time.format=yyyy-MM-dd HH:mm:ss
+
+##########################################
+############ Baseline生成参数 #############
+##########################################
+baseline.range.days=1
+baseline.function=KalmanFilter
+baseline.period.correlative.threshold=0.8
+baseline.historical.frequency.thread=0.5
+baseline.exception.percentile=0.99
+baseline.exception.fill.percentile=0.99
+baseline.rational.percentile=0.99
+
+baseline.type2.percentile=1
+baseline.type3.percentile=1
+
+# p99/p50 倍数阈值
+baseline.times.percent.times=10
+
+#Kalman Filter
+baseline.kalman.q=0.1
+baseline.kalman.r=0.1
+baseline.kalman.p=8
+baseline.kalman.m=2
+
+monitor.frequency.bin.num=100
+
+##########################################
+################ 并发参数 #################
+##########################################
+all.partition.num=10
+core.pool.size=10
+max.pool.size=10
+#druid分区字段partition_num的最大值为9999
+druid.statement.query.timeout=36000
+druid.partition.num.max=10000
+druid.connection.retry.time.max=10000
+#druid重连等待时间约为一个线程处理完成时间
+druid.connection.retry.sleep.time=1000
