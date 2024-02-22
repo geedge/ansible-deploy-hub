@@ -1,0 +1,39 @@
+#============================Galaxy OLAP Configuration===============================#
+#The default installation location
+deploy_dir: /data/hdd/olap
+
+#The default data storage location,use storing application data,logs and configuration files
+data_dir: /data/ssd/olap
+
+#Use commas (,) to separate the network segments that the firewall allows to access
+allowed_ips: 192.168.44.0/24,192.168.45.0/24,192.168.54.0/24,192.168.58.0/24,192.168.41.0/24
+
+#============================Keepalived Configuration===============================#
+#Specify the interface virtual IP address.It used to configure high availability for OLAP query engine
+#Only one IP address can be configured on the same network segment
+#The following three ip addresses must be unique
+vrrp_instance:
+  default:
+    virtual_ipaddress: 192.168.45.102
+    interface: eth0
+    virtual_router_id: 61
+  oss:
+    virtual_ipaddress: 192.168.45.102
+    interface: eth0
+    virtual_router_id: 62
+
+#============================OSS Configuration===============================#
+#HOS token
+hos_token: fea0ee76be8147bd9b53ad995b7ef603
+
+#HOS token（加密）
+encrypted_hos_token: M+0IMYS1+XENltUe585ahhqwY+QZJmnvtxML1vXExB9aO+CPT3GfsP4rtbVuWXpf
+
+#===========================Central Management Settings==============================#
+#Central Management Server IP, Used for Dos detection task get policy.
+cm_api: 192.168.44.3
+
+#Central Management Server Token, Each environment Token is different.
+#Requires communication with CM developers.
+cm_api_token: aa2bdec5518ad131f71944b13ce5c298&1&
+

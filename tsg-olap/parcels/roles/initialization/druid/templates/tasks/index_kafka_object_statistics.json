@@ -1,0 +1,95 @@
+{
+  "type": "kafka",
+  "dataSchema": {
+    "dataSource": "object_statistics",
+    "parser": {
+      "type": "string",
+      "parseSpec": {
+        "format": "json",
+        "timestampSpec": {
+          "column": "timestamp_ms",
+          "format": "millis"
+        },
+        "dimensionsSpec": {
+          "dimensions": [
+            {"name": "vsys_id","type": "long"},
+            "device_id",
+            "device_group",
+            "data_center",
+            {"name": "template_id","type": "long"},
+            {"name": "chart_id","type": "long"},
+            {"name": "version","type": "long"},
+            "object_type",
+            {"name": "object_id","type": "long"},
+            {"name": "item_id","type": "long"}
+          ]
+        },
+        "flattenSpec": {
+            "useFieldDiscovery": true,
+            "fields": [
+                { "name": "in_bytes", "type": "path", "expr": "$.fields.in_bytes" },
+                { "name": "out_bytes", "type": "path", "expr": "$.fields.out_bytes" },
+                { "name": "bytes", "type": "path", "expr": "$.fields.bytes" },
+                { "name": "new_in_sessions", "type": "path", "expr": "$.fields.new_in_sessions" },
+                { "name": "new_out_sessions", "type": "path", "expr": "$.fields.new_out_sessions" },
+                { "name": "sessions", "type": "path", "expr": "$.fields.sessions" },
+                { "name": "vsys_id", "type": "path", "expr": "$.tags.vsys_id" },
+                { "name": "data_center", "type": "path", "expr": "$.tags.data_center" },
+                { "name": "device_group", "type": "path", "expr": "$.tags.device_group" },
+                { "name": "device_id", "type": "path", "expr": "$.tags.device_id" },
+                { "name": "template_id", "type": "path", "expr": "$.tags.template_id" },
+                { "name": "chart_id", "type": "path", "expr": "$.tags.chart_id" },
+                { "name": "version", "type": "path", "expr": "$.tags.version" },
+                { "name": "object_type", "type": "path", "expr": "$.tags.object_type" },
+                { "name": "object_id", "type": "path", "expr": "$.tags.object_id" },
+                { "name": "item_id", "type": "path", "expr": "$.tags.item_id" }
+            ]
+        }
+      }
+    },
+    "metricsSpec" : [
+        { "type" : "longSum", "name" : "in_bytes", "fieldName" : "in_bytes" },
+        { "type" : "longSum", "name" : "out_bytes", "fieldName" : "out_bytes" },
+        { "type" : "longSum", "name" : "bytes", "fieldName" : "bytes" },
+        { "type" : "longSum", "name" : "new_in_sessions", "fieldName" : "new_in_sessions" },
+        { "type" : "longSum", "name" : "new_out_sessions", "fieldName" : "new_out_sessions" },
+        { "type" : "longSum", "name" : "sessions", "fieldName" : "sessions" }
+  ],
+    "granularitySpec": {
+      "type": "uniform",
+      "segmentGranularity": "DAY",
+      "queryGranularity": {"type": "period", "period": "PT15S"},
+      "rollup": true
+    },
+    "transformSpec" :{
+      "transforms":[
+        {"type": "expression", "name": "in_bytes", "expression": "nvl(in_bytes, 0)"},
+        {"type": "expression", "name": "out_bytes", "expression": "nvl(out_bytes, 0)"},
+        {"type": "expression", "name": "bytes", "expression": "nvl(bytes, 0)"},
+        {"type": "expression", "name": "new_in_sessions", "expression": "nvl(new_in_sessions, 0)"},
+        {"type": "expression", "name": "new_out_sessions", "expression": "nvl(new_out_sessions, 0)"},
+        {"type": "expression", "name": "sessions", "expression": "nvl(sessions, 0)"}
+      ],
+      "filter": { "type": "selector", "dimension": "name", "value": "object_statistics" }
+    }
+  },
+  "tuningConfig": {
+    "type": "kafka",
+    "resetOffsetAutomatically": true,
+    "reportParseExceptions": false
+  },
+  "ioConfig": {
+    "topic": "OBJECT-STATISTICS-METRIC",
+    "taskCount": 1,
+    "replicas": 1,
+    "taskDuration": "PT1H",
+    "completionTimeout": "PT30M",
+    "consumerProperties": {
+      "bootstrap.servers": "kafkabootstrap",
+      "sasl.mechanism": "PLAIN",
+      "security.protocol": "SASL_PLAINTEXT",
+      "sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"admin\" password=\"galaxy2019\";"
+    }
+  }
+}
+

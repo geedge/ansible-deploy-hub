@@ -1,0 +1,28 @@
+- name: Create buckets
+  uri:
+    url: "http://{{ vrrp_instance.oss.virtual_ipaddress }}:9098/hos/{{ item }}"
+    method: PUT
+    headers:
+      token: "{{ hos_token }}"
+    return_content: yes
+  retries: 3
+  delay: 3
+  loop: "{{ init_buckets }}"
+  run_once: true
+
+- name: Check if buckets exist
+  uri:
+    url: "http://{{ vrrp_instance.oss.virtual_ipaddress }}:9098/hos/"
+    method: GET
+    headers:
+      token: "{{ hos_token }}"
+    return_content: yes
+  register: bucket_info
+  retries: 3
+  delay: 3
+
+- name: Check create bucket result
+  fail:
+    msg: "{{ item }} was not created successfully. Please retry."
+  when: "'{{ item }}' not in bucket_info.content"
+  loop: "{{ init_buckets }}"

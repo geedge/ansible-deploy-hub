@@ -1,0 +1,21 @@
+- block:
+  - include: uninstall.yml
+  - include: "{{ playbook_name }}"
+    vars: 
+      playbook_name: "{{ 'init-cluster.yml' if groups.druid | length > 1 else 'init-standalone.yml' }}"
+  - include: check.yml
+  when: inventory_hostname in groups['druid'][:2] and operation == 'install'
+
+- block:
+  - include: backup.yml
+  - include: uninstall.yml
+  - include: "{{ playbook_name }}"
+    vars:
+      playbook_name: "{{ 'init-cluster.yml' if groups.druid | length > 1 else 'init-standalone.yml' }}"
+  - include: check.yml
+  when: inventory_hostname in groups['druid'][:2] and (operation) == "upgrade"
+
+- block:
+  - include: uninstall.yml
+  when: inventory_hostname in groups['druid'][:2] and (operation) == "uninstall"
+

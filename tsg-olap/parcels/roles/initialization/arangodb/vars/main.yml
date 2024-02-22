@@ -1,0 +1,9 @@
+container_name: arangodb
+
+# 数据库
+arangodb_database: 'tsg_galaxy_v3'
+
+# 库表
+arangodb_collections:
+   - IP
+   - R_LOCATE_FQDN2IP

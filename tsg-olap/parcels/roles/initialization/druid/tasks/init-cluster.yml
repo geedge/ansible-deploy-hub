@@ -1,0 +1,115 @@
+- name: Setting init directory
+  set_fact:
+   init_path: '{{ deploy_dir }}/druid/init/'
+   topology_path: '{{ deploy_dir }}/druid/topology/'
+
+- name: Remove files and directories
+  file:
+    path: "{{ init_path }}"
+    state: absent
+  ignore_errors: true
+  loop:
+    - "{{ init_path }}"
+    - "{{ topology_path }}"
+
+- name: Creatting init directory
+  file:
+    path: '{{ item }}'
+    state: directory
+  loop:
+    - "{{ init_path }}"
+    - "{{ topology_path }}"
+    - "{{ topology_path }}/tasks"
+
+- name: Setting hdfs_ip variable
+  set_fact: 
+      hdfs_ip: "{{groups.hdfs[0]}}"
+
+- name: Unzipping segments.zip
+  unarchive:
+    src: 'files/cluster/segments.zip'
+    dest: '{{ deploy_dir }}/'
+    force: true
+  run_once: true
+  delegate_to: '{{ hdfs_ip }}'
+
+- name: Copying push segments to hdfs installation path
+  copy:
+    src: 'files/cluster/push_segments.sh'
+    dest: '{{ deploy_dir }}/push_segments.sh'
+    force: true
+    mode: 0755
+  run_once: true
+  delegate_to: '{{ hdfs_ip }}'
+
+- name: Creating druid directory and putting segments to hdfs
+  shell: source /etc/profile && hadoop fs -mkdir -p /druid/segments
+  register: nums_out
+  run_once: true
+  delegate_to: '{{ hdfs_ip }}'
+  ignore_errors: yes
+
+- name: Putting segments to hdfs
+  shell:  source /etc/profile && cd {{ deploy_dir }}/ && sh push_segments.sh
+  register: nums_out
+  run_once: true
+  delegate_to: '{{ hdfs_ip }}'
+
+- name: Copying mysql Client to /usr/bin/
+  copy:
+    src: 'files/mysql'
+    dest: '/usr/bin/'
+    mode: 0755
+    force: true
+
+- name: Copying init files to {{ init_path }}
+  copy:
+    src: 'files/cluster/'
+    dest: '{{ deploy_dir }}/druid/init'
+    force: true
+
+- name: Copying tasks template to {{ topology_path }}
+  template:
+    src: "{{ item }}"
+    dest: "{{ deploy_dir }}/druid/topology/tasks/{{ item | basename | regex_replace('.j2$', '') }}"
+    mode: "0644"
+    force: true
+  with_fileglob: "templates/tasks/*"
+
+- name: Inserting segments to mariadb
+  shell: 'mysql -uroot -p{{ mariadb_default_pin }} -P3306 -h{{ vrrp_instance.default.virtual_ipaddress }} druid < {{ init_path }}/druid_segments-tsg.sql'
+  run_once: true
+
+- name: Copying script files
+  template:
+    src: '{{ item }}.j2'
+    dest: '{{ topology_path }}/{{ item }}'
+    mode: 0755
+  with_items:
+    - 'druid_monitor.sh'
+    - 'supervisor-manager.sh'
+
+- name: Copying monitor template
+  template:
+    src: 'run_druid_monitor.j2'
+    dest: '/etc/cron.d/run_druid_monitor'
+    mode: 0644
+
+- name: Submitting druid tasks
+  shell: cd {{ topology_path }} && sh supervisor-manager.sh startall
+  run_once: true
+
+- name: Deleting {{ deploy_dir }}/push_segments.sh
+  file:
+    path: "{{ deploy_dir }}/push_segments.sh"
+    state: absent
+  run_once: true
+  delegate_to: '{{ hdfs_ip }}'
+
+- name: Deleting {{ deploy_dir }}/segments.zip
+  file:
+    path: "{{ deploy_dir }}/segments.zip"
+    state: absent
+  run_once: true
+  delegate_to: '{{ hdfs_ip }}'
+

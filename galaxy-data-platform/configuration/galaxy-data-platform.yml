@@ -1,0 +1,143 @@
+zookeeper:
+  #Running memory of the Zookeeper.
+  java_opts: -Xmx1024m -Xms1024m
+
+mariadb:
+  #Used to cache data and index data from tables in the InnoDB storage engine.
+  innodb_buffer_pool_size: 2048
+
+nacos:
+  #Running memory of the Nacos.
+  java_opt: '-Xmx1024m -Xms1024m -Xmn256m'
+
+druid:
+  broker:
+    #Running memory of the Druid-Broker.
+    java_opts: -Xmx1024m -Xms1024m
+    #Worker tasks also use off-heap ("direct") memory. Set the amount of direct memory available (-XX:MaxDirectMemorySize) to at least (druid.processing.numThreads + 1) * druid.processing.buffer.sizeBytes
+    MaxDirectMemorySize: 512m
+    #This specifies a buffer size (less than 2GiB), for the storage of intermediate results
+    druid.processing.buffer.sizeBytes: 50000000
+    #The number of direct memory buffers available for merging query results.
+    druid.processing.numMergeBuffers: 4
+    #The number of processing threads to have available for parallel processing of segments.
+    druid.processing.numThreads: 5
+  coordinator:
+    #Running memory of the Druid-Coordinator.
+    java_opts: -Xmx1024m -Xms1024m
+  historical:
+    #Running memory of the Druid-Historical.
+    java_opts: -Xmx1024m -Xms1024m
+    #The size of the process's temporary cache data on disk
+    druid.segmentCache.locations: 300000000000
+    #Worker tasks also use off-heap ("direct") memory. Set the amount of direct memory available (-XX:MaxDirectMemorySize) to at least (druid.processing.numThreads + 1) * druid.processing.buffer.sizeBytes
+    MaxDirectMemorySize: 512m
+    #This specifies a buffer size (less than 2GiB), for the storage of intermediate results
+    druid.processing.buffer.sizeBytes: 50000000
+    #The number of direct memory buffers available for merging query results.
+    druid.processing.numMergeBuffers: 4
+    #The number of processing threads to have available for parallel processing of segments.
+    druid.processing.numThreads: 5
+  middlemanager:
+    #Running memory of the Druid-Middlemanager.
+    java_opts: -Xmx1024m -Xms1024m
+    druid.indexer.fork.property.druid.processing.numMergeBuffers: 2
+    druid.indexer.fork.property.druid.processing.buffer.sizeBytes: 20000000
+    druid.indexer.fork.property.druid.processing.numThreads: 1
+
+hadoop:
+  namenode:
+    #Running memory of the Hadoop Namenode.
+    java_opt: '-Xmx1024m -Xms1024m'
+    #The number of Namenode RPC server threads that listen to requests from clients.
+    dfs.namenode.handler.count: 30
+  datanode:
+    #Running memory of the Hadoop Datanode.
+    java_opt: '-Xmx1024m -Xms1024m'
+    #The number of server threads for the datanode.
+    dfs.datanode.handler.count: 40
+  journalnode:
+    #Running memory of the Hadoop JournalNode.
+    java_opt: '-Xmx1024m -Xms1024m'
+  zkfc:
+    #Running memory of the Hadoop DFSZKFailoverController.
+    java_opt: '-Xmx1024m -Xms1024m'
+  yarn:
+    resourcemanager:
+      #Running memory of the Hadoop ResourceManager.
+      java_opt: '-Xmx1024m -Xms1024m'
+    nodemanager:
+      #Running memory of the Hadoop NodeManager.
+      java_opt: '-Xmx1024m -Xms1024m'
+      #Amount of physical memory, in MB, that can be allocated for containers.
+      yarn.nodemanager.resource.memory-mb: 16384
+      #The maximum allocation for every container request at the RM in MBs.
+      yarn.scheduler.maximum-allocation-mb: 16384
+      #Number of vcores that can be allocated for containers. This is used by the RM scheduler when allocating resources for containers.
+      yarn.nodemanager.resource.cpu-vcores: 48
+      #The maximum allocation for every container request at the RM in terms of virtual CPU cores.
+      yarn.scheduler.maximum-allocation-vcores: 48
+
+flink:
+  #Total Process Memory size for the JobManager.
+  jobmanager.memory.process.size: 1024M
+  #Total Process Memory size for the TaskExecutors.
+  taskmanager.memory.process.size: 10240M
+  #This is the size of off-heap memory managed for sorting, hash tables, caching of intermediate results and state backend.
+  taskmanager.memory.managed.size: 512M
+  #Framework Off-Heap Memory size for TaskExecutors. This is the size of off-heap memory reserved for TaskExecutor framework
+  taskmanager.memory.framework.off-heap.size: 128M
+  #JVM Metaspace Size for the TaskExecutors.
+  taskmanager.memory.jvm-metaspace.size: 1024M
+  #Max Network Memory size for TaskExecutors. Network Memory is off-heap memory reserved for ShuffleEnvironment.
+  taskmanager.memory.network.max: 256M
+  #The number of parallel operator or user function instances that a single TaskManager can run.
+  #This value is typically proportional to the number of physical CPU cores that the TaskManager's machine has (e.g., equal to the number of cores, or half the number of cores).
+  taskmanager.numberOfTaskSlots: 1
+
+hbase:
+  common:
+    #The HBase resource isolation function is used to group tables for storage.
+    enable_rsgroup: false
+  hmaster:
+    #Running memory of the HBase HMaster.
+    java_opt: '-Xmx1024m -Xms1024m'
+  regionserver:
+    #Running memory of the HBase HRegionserver.
+    java_opt: '-Xmx1024m -Xms1024m -Xmn128m'
+    #This defines the number of threads the region server keeps open to serve requests to tables,It should generally be set to (number of cores - 1)
+    hbase.regionserver.handler.count: 40
+    #If any one of a column families' HStoreFiles has grown to exceed this value, the hosting HRegion is split in two.
+    hbase.hregion.max.filesize: 10737418240
+    #Indicates the memory used by all read caches. The value can be the actual memory value, expressed in MB
+    hbase.bucketcache.size: 100
+
+kafka:
+  #Running memory of the Kafka.
+  java_opt: '-Xmx1024m -Xms1024m'
+  #The minimum age of a log file to be eligible for deletion due to age
+  log.retention.hours: 168
+  #A size-based retention policy for logs,unit byte
+  log.retention.bytes: 10737418240
+
+clickhouse:
+  #Limit on total memory usage. Zero means Unlimited.
+  max_server_memory_usage: 30000000000
+  #Sets the number of threads performing background merges and mutations for tables with MergeTree engines.
+  background_pool_size: 16
+
+hos:
+  #Running memory of the Kafka.
+  java_opt: '-Xmx1024m -Xms1024m -Xmn512m'
+  #Download files quickly,Used for HBase with a memory larger than 20GB.open: 1 , close: 0
+  isQuickDownloadFile: 0
+  #Whether to enable SSL.open: 1 , close: 0
+  enable_ssl: 0
+  #nacos contains the name of the namespace where the configuration is stored
+  nacos.config.namespace: prod
+
+ignite:
+  #Running memory of the Nacos.
+  java_opt: '-Xmx1024m -Xms1024m'
+  #Setting region max size equal to physical RAM size(5 GB).
+  maxSize: '#{5L * 1024 * 1024 * 1024}'

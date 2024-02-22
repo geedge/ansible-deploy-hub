@@ -1,0 +1,103 @@
+#!/bin/bash
+source /etc/profile
+
+DRUID_HOST='{{ vrrp_instance.default.virtual_ipaddress }}'
+KAFKA_HOST="{% for host in groups['kafka'] %}
+{{ host }}:9094{% if not loop.last %},{% endif %}
+{% endfor %}"
+
+# 参数：1.操作 2.任务文件或目录
+OPERATION=$1
+filename=$(basename "$file")
+TASK_FILE_LIST=$(find "./tasks" -name "*.json")
+
+if [ $# -lt 1 ]; then
+    echo "Usage: ./supervisor-manager.sh [startall|resetall|terminateall|shutdownall]"
+    echo "Usage: ./supervisor-manager.sh [start|reset|terminate|shutdown] <./tasks/[task file]>"
+    exit 1
+fi
+
+function start_task() {
+    local task_file=$1
+    local task_name=$(basename $task_file)
+    cp ${task_file} ./
+
+    sed -i 's/kafkabootstrap/'$KAFKA_HOST'/' ${task_name}
+
+    curl --retry-delay 3 --retry 3 -X 'POST' -H 'Content-Type:application/json' -d @${task_name} http://$DRUID_HOST:8089/druid/indexer/v1/supervisor
+
+    if [ $? -eq "0" ]; then
+        echo "task:'${task_name}' Start-up success! "
+        rm -rf ./${task_name}
+    else
+        echo "task:'${task_name}' Start-up failure! "
+        exit 1
+    fi
+
+}
+
+function reset_task() {
+    local task_name=$(basename $1)
+    task_name="${task_name/index_kafka_/}"
+    task_name="${task_name/.json/}"
+    curl --retry-delay 3 --retry 3 -X 'POST' "http://${DRUID_HOST}:8089/druid/indexer/v1/supervisor/${task_name}/reset"
+    sleep 2
+}
+
+function terminate_task() {
+    local task_name=$(basename $1)
+    task_name="${task_name/index_kafka_/}"
+    task_name="${task_name/.json/}"
+    curl --retry-delay 3 --retry 3 -X 'POST' "http://${DRUID_HOST}:8089/druid/indexer/v1/supervisor/${task_name}/terminate"
+}
+
+function terminate_all() {
+    curl --retry-delay 3 --retry 3 -X 'POST' "http://${DRUID_HOST}:8089/druid/indexer/v1/supervisor/terminateAll"
+}
+
+function shutdown_tasks() {
+    local task_name=$(basename $1)
+    task_name="${task_name/index_kafka_/}"
+    task_name="${task_name/.json/}"
+    curl --retry-delay 3 --retry 3 -X 'POST' "http://${DRUID_HOST}:8089/druid/indexer/v1/datasources/${task_name}/shutdownAllTasks"
+    sleep 2
+}
+
+case $OPERATION in
+start)
+    start_task "$2"
+    ;;
+startall)
+    for task in ${TASK_FILE_LIST[@]}; do
+        start_task "$task"
+    done
+    ;;
+reset)
+    reset_task "$2"
+    ;;
+resetall)
+    for task in ${TASK_FILE_LIST[@]}; do
+        reset_task "$task"
+    done
+    ;;
+terminate)
+    terminate_task "$2"
+    ;;
+terminateall)
+    terminate_all
+    ;;
+shutdown)
+    shutdown_tasks "$2"
+    ;;
+shutdownall)
+    for task in ${TASK_FILE_LIST[@]}; do
+        shutdown_tasks "$task"
+    done
+    ;;
+
+*)
+    echo "Usage: ./supervisor-manager.sh [startall|resetall|terminateall|shutdownall]"
+    echo "Usage: ./supervisor-manager.sh [start|reset|terminate|shutdown] <./tasks/[task file]>"
+    ;;
+esac
+

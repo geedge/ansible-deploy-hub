@@ -1,0 +1,53 @@
+- name: Creating directory
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ item }}/init'
+  loop:
+    - 'galaxy-job-admin'
+    - 'galaxy-job-executor'
+
+- name: Copying admin init files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ deploy_dir }}/{{ admin_container_name }}/init/{{ item.dest }}"
+    mode: "{{ item.mode }}"
+    force: true
+  loop:
+    - { src: "push_config.sh.j2", dest: "push_config.sh", mode: "0755" }
+    - { src: "admin/xxl_job.sql.j2", dest: "xxl_job.sql", mode: "0644" }
+    - { src: 'admin/create_mariadb_tables.sh.j2', dest: 'create_mariadb_tables.sh', mode: "0755" }
+    - { src: "admin/galaxy-job-admin.properties.j2", dest: "galaxy-job-admin.properties", mode: "0644" }  
+
+- name: Copying mysql Client to /usr/bin/
+  copy:
+    src: 'files/mysql'
+    dest: '/usr/bin/'
+    mode: 0755
+    force: true
+
+- name: Creating table and init jobs
+  shell: cd {{ deploy_dir }}/{{ admin_container_name }}/init && sh create_mariadb_tables.sh
+  run_once: true
+  when: operation == 'install'
+
+- name: Copying executor init files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ deploy_dir }}/{{ executor_container_name }}/init/{{ item.dest }}"
+    mode: "{{ item.mode }}"
+    force: true
+  loop:
+    - { src: "push_config.sh.j2", dest: "push_config.sh", mode: "0755" }
+    - { src: "executor/galaxy-job-executor.properties.j2", dest: "galaxy-job-executor.properties", mode: "0644" }
+
+- name: Pushing Galaxy-job-service admin config
+  shell: 'cd {{ deploy_dir }}/{{ item.src }}/init && sh push_config.sh {{ item.conf }}'
+  register: post_result
+  until: post_result.stdout == '1'
+  retries: 3
+  delay: 3
+  failed_when: post_result.stdout != '1'
+  loop: 
+    - { src: "{{ admin_container_name }}" , conf: "galaxy-job-admin.properties" }
+    - { src: "{{ executor_container_name }}" , conf: "galaxy-job-executor.properties" }
+  run_once: true

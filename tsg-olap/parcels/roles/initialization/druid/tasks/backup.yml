@@ -1,0 +1,25 @@
+- name: Check if backup directory exists
+  stat:
+    path: "{{ backup_path }}"
+  register: exist_status
+
+- name: Backup directories
+  block:
+    - name: Creat backup directory
+      file:
+        state: directory
+        path: "{{ backup_path }}"
+
+    - name: Copying directories to backup
+      copy:
+        src: "{{ deploy_dir }}/{{ container_name }}/{{ item }}"
+        dest: "{{ backup_path }}"
+        remote_src: true
+      loop: "{{ backup_items }}"
+
+  rescue:
+    - name: Remove backup directory on failure
+      file:
+        path: "{{ backup_path }}"
+        state: absent
+  when: exist_status.stat.exists == false

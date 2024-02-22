@@ -1,0 +1,13 @@
+[
+	{
+		"type" : "loadByPeriod",
+		"period" : "PT1H",
+		"includeFuture" : true,
+		"tieredReplicants": {
+			"_default_tier" : 1
+		}
+	},
+	{
+		"type" : "dropForever"
+	}
+]

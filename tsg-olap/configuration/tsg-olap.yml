@@ -1,0 +1,93 @@
+config_namespace: "prod"
+
+# Name of the data center
+data_center_name: xxg
+
+galaxy_qgw_service:
+  # Running memory of the Galaxy-qgw-service.
+  java_opts: "-Xms1024m -Xmx3120m -XX:+ExitOnOutOfMemoryError"
+
+galaxy_job_service:
+  # Running memory of the Galaxy-job-admin.
+  admin_java_opts: '-Xms512m -Xmx740m'
+  # Running memory of the Galaxy-job-executor.
+  executor_java_opts: '-Xms512m -Xmx1024m'
+
+saved_query_scheduler:
+  # Running memory of the saved-query-scheduler.
+  java_opts: "-Xms512m -Xmx1024m"
+  
+druid:
+  # Druid job parallelism
+  index_kafka_statistics_rule:
+    taskCount: 1  
+    druid.indexer.runner.javaOpts: "-server -Xms1g -Xmx2g -XX:MaxDirectMemorySize=1g"
+
+flink:
+  agg_app_protocol_traffic:
+    parallelism: 1
+    taskmanager.memory.process.size: 2048m
+    taskmanager.memory.jvm-metaspace.size: 256m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  detection_dos_attack:
+    parallelism: 1
+    taskmanager.memory.process.size: 2048m
+    taskmanager.memory.jvm-metaspace.size: 256m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  agg_traffic_file_chunk_combine:
+    parallelism: 1
+    taskmanager.memory.process.size: 2048m
+    taskmanager.memory.jvm-metaspace.size: 256m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  agg_troubleshooting_file_chunk_combine:
+    parallelism: 1
+    taskmanager.memory.process.size: 2048m
+    taskmanager.memory.jvm-metaspace.size: 256m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  correlation_sip_rtp_session:
+    parallelism: 1
+    taskmanager.memory.process.size: 2048m
+    taskmanager.memory.jvm-metaspace.size: 256m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  agg_session_record_topn:
+    parallelism: 1
+    taskmanager.memory.process.size: 2048m
+    taskmanager.memory.jvm-metaspace.size: 256m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  dos_event_kafka_to_clickhouse:
+    parallelism: 1
+    taskmanager.memory.process.size: 2048m
+    taskmanager.memory.jvm-metaspace.size: 128m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  etl_proxy_event_kafka_to_clickhouse:
+    parallelism: 1
+    taskmanager.memory.process.size: 2048m
+    taskmanager.memory.jvm-metaspace.size: 256m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  etl_session_record_kafka_to_clickhouse:
+    parallelism: 1
+    taskmanager.memory.process.size: 3072m
+    taskmanager.memory.jvm-metaspace.size: 256m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  etl_transaction_record_kafka_to_clickhouse:
+    parallelism: 1
+    taskmanager.memory.process.size: 3072m
+    taskmanager.memory.jvm-metaspace.size: 256m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+  etl_voip_record_kafka_to_clickhouse:
+    parallelism: 1
+    taskmanager.memory.process.size: 2048m
+    taskmanager.memory.jvm-metaspace.size: 128m
+    taskmanager.numberOfTaskSlots: 1
+    taskmanager.memory.framework.off-heap.size: 256m
+

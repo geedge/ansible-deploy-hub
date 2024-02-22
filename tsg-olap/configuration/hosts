@@ -1,0 +1,105 @@
+#==============================================================================
+# Basic Components
+#
+# Orchestration & Coordinator & Configuration & Cold Storage
+#==============================================================================
+
+#The cluster use master-master replication mode,maximum 2 servers.
+[mariadb]
+192.168.45.102
+
+#Apache Zookeeper is a centralized service for maintaining configuration information, naming, providing distributed synchronization, and providing group services.
+#The cluster mode at least 3 servers,The number of nodes must be odd,Like 3/5 nodes.
+[zookeeper]
+192.168.45.102
+
+#Alibaba Nacos an easy-to-use dynamic service discovery, configuration and service management platform
+#The cluster mode at least 3 servers,Multi-node HA mode.
+[nacos]
+192.168.45.102
+
+#Apache Hadoop HDFS(Hadoop Distributed File System)
+#HDFS is deployed only in cluster mode.
+#At least 3 servers,An HDFS cluster consists of two Namenodes and a certain number of Datanodes node.
+[hdfs]
+192.168.45.102
+
+#==============================================================================
+# BigData Processing Components
+#
+# Big data is a term that refers to the massive volume, variety, and velocity of data that is generated from various sources and needs to be stored, processed, and analyzed efficiently. 
+# The Big Data processing component is used to provide a platform for fast and efficient processing
+#==============================================================================
+
+#Apache Kafka is a distributed event streaming platform,used for high-performance data pipelines, streaming analytics.
+#The cluster mode at least 3 servers,By default install CMAK(Management tool) on the first server.
+[kafka]
+192.168.45.102
+
+#Apache Hadoop Yarn,Includes the Flink/Groot-stream runtime environment.
+#Yarn is the resource management and job scheduling technology in the open source Hadoop distributed processing framework.
+#The cluster mode at least 3 servers,A Yarn cluster consists of two ResourceManager (RM) and a certain number of NodeManager(NM) node.
+[yarn]
+192.168.45.102
+
+#==============================================================================
+# Analytic Storage Components
+#
+# This is a data storage solution designed to support large-scale data analysis and data mining workloads. 
+# The analytic Storage component it offers high performance, scalability, and flexibility to meet the demands of processing vast amounts of structured and unstructured data.
+#==============================================================================
+
+#Apache HBase is the hosting of very large tables -- billions of rows X millions of columns -- atop clusters of commodity hardware
+#The cluster mode at least 3 servers,A HBase cluster consists of three HMaster and a certain number of HRegionServer node.
+[hbase]
+192.168.45.102
+#Apache Druid is a high performance, real-time analytics database that delivers sub-second queries on streaming and batch data at scale and under load.
+#The cluster mode at least 3 servers,A Druid cluster consists of two master/query and a certain number of worker node.
+[druid]
+192.168.45.102
+
+#Yandex ClickHouse is the fastest and most resource efficient open-source database for real-time apps and analytics.
+#The cluster mode at least 3 servers,A Clickhouse cluster consists of two query and a certain number of data node.
+[clickhouse]
+192.168.45.102
+
+#ArangoDB is a scalable graph database system to drive value from connected data, faster.
+#Only support single server deployment.
+[arangodb]
+192.168.45.102
+
+#==============================================================================
+# OLAP Self-research service
+#
+#==============================================================================
+
+#The default proxy,Includes the Nginx/Keepalived,If it is a standalone mode, only Nginx.
+#A maximum of two nodes.
+[loadbalancer]
+192.168.45.102
+
+#The clickhouse query proxy,Usually deployed with loadbalancer.
+[chproxy]
+192.168.45.102
+
+#Galaxy-hos-service is a distributed object storage service.
+#Include components:Keepalived/Nginx/Galaxy-hos-service,If it is a standalone mode, only Galaxy-hos-service/Nginx.
+#The cluster mode at least 2 servers,keepalived and nginx services are deployed on the first two nodes by default.
+[galaxy_hos_service]
+192.168.45.102
+
+
+#The query gateway,Provides a unified query entry
+[galaxy_qgw_service]
+192.168.45.102
+
+#A lightweight distributed task scheduling framework.
+#Include components: Galaxy-job-admin/Galaxy-job-executor
+[galaxy_job_service]
+192.168.45.102
+
+#The report execution service.
+[saved_query_scheduler]
+192.168.45.102
+
+

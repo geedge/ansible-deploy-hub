@@ -1,0 +1,76 @@
+#!/bin/bash
+
+base_dir=`dirname $0`
+base_dir="$(cd "$base_dir" && pwd)"
+#echo $base_dir
+
+router_ip='127.0.0.1'
+
+common_task_name=`cat $base_dir/common_task.txt`
+common_rule_file="$base_dir/common_data_rule.json"
+
+hot_task_name=`cat $base_dir/hot_task.txt`
+hot_rule_file="$base_dir/hot_data_rule.json"
+
+case $1 in
+
+	resetAll)
+	for var in ${common_task_name[@]};
+	do
+		curl -X 'POST' http://${router_ip}:8089/druid/indexer/v1/supervisor/${var}/reset
+		sleep 2
+	done
+
+	for var in ${hot_task_name[@]};
+	do
+		curl -X 'POST' http://${router_ip}:8089/druid/indexer/v1/supervisor/${var}/reset
+		sleep 2
+	done
+	;;
+
+	terminateAll)
+		curl -X 'POST' http://${router_ip}:8089/druid/indexer/v1/supervisor/terminateAll
+	;;
+	
+	shutdownAllTasks)
+	for var in ${common_task_name[@]};
+        do
+                curl -X 'POST' http://${router_ip}:8089/druid/indexer/v1/datasources/${var}/shutdownAllTasks
+                sleep 2
+        done
+
+        for var in ${hot_task_name[@]};
+        do
+                curl -X 'POST' http://${router_ip}:8089/druid/indexer/v1/datasources/${var}/shutdownAllTasks
+                sleep 2
+        done
+	;;
+	
+	reset)
+		if [ $# -le 1 ]; then
+  			echo "Usage: supervisor-manger reset <dataSource>"
+  			exit 1
+		fi
+		curl -X 'POST' http://${router_ip}:8089/druid/indexer/v1/supervisor/$2/reset
+	;;
+	
+	terminate)
+		if [ $# -le 1 ]; then
+                        echo "Usage: supervisor-manger terminate <dataSource>"
+                        exit 1
+                fi
+		curl -X 'POST' http://${router_ip}:8089/druid/indexer/v1/supervisor/$2/terminate
+	;;
+
+	shutdownTasks)
+                if [ $# -le 1 ]; then
+                        echo "Usage: supervisor-manger shutdownTasks <dataSource>"
+                        exit 1
+                fi
+		curl -X 'POST' http://${router_ip}:8089/druid/indexer/v1/datasources/$2/shutdownAllTasks
+	;;
+	*)
+		echo "Usage: supervisor-manger {resetAll|terminateAll|shutdownAllTasks}"
+                echo "Usage: supervisor-manger {reset|terminate|shutdownTasks} <dataSource>"
+	;;
+esac
