@@ -1,6 +1,0 @@
-init_buckets:
-  - troubleshooting_file_bucket
-  - assessment_file_bucket
-  - knowledge_base_bucket
-  - traffic_file_bucket
-  - report_snapshot_bucket

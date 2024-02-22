@@ -1,5 +1,0 @@
-- include: init.yml
-  when: operation == 'install'
-
-- include: upgrade.yml
-  when: operation == 'upgrade'
