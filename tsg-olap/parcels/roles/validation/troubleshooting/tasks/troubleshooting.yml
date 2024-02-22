@@ -1,0 +1,55 @@
+- name: Creating {{ deploy_dir }}/{{ soft_home_path }}
+  file:
+    state: directory
+    path: '{{ deploy_dir }}/{{ soft_home_path }}/'
+
+- name: Copying troubleshooting to {{ deploy_dir }}/{{ soft_home_path }}
+  copy:
+    src: files/
+    dest: '{{ deploy_dir }}/{{ soft_home_path }}/'
+    force: true
+
+- name: Copying troubleshooting.sh
+  template:
+    src: troubleshooting.sh.j2
+    mode: 0755
+    dest: '{{ deploy_dir }}/{{ soft_home_path }}/troubleshooting.sh'
+    force: true
+
+- name: Copying Prod.postman_environment.json
+  template:
+    src: Prod.postman_environment.json.j2
+    dest: '{{ deploy_dir }}/{{ soft_home_path }}/Prod.postman_environment.json'
+    force: true
+
+- block:
+    - name: Deleting /opt/troubleshooting
+      file:
+        path: "/opt/troubleshooting"
+        state: absent
+
+    - name: Creating /opt/troubleshooting
+      file:
+        state: directory
+        path: '/opt/troubleshooting'
+
+    - name: Copying troubleshooting to /opt/troubleshooting
+      copy:
+        src: files/
+        dest: '/opt/troubleshooting/'
+        force: true
+    
+    - name: Copying troubleshooting.sh
+      template:
+        src: troubleshooting.sh.j2
+        mode: 0755
+        dest: '/opt/troubleshooting/troubleshooting.sh'
+        force: true
+    
+    - name: Copying Prod.postman_environment.json
+      template:
+        src: Prod.postman_environment.json.j2
+        dest: '/opt/troubleshooting/Prod.postman_environment.json'
+        force: true
+  delegate_to: 127.0.0.1
+

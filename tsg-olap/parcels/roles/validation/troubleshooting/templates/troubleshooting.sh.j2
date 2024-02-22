@@ -1,0 +1,50 @@
+#!/bin/bash
+
+
+echo "
+--folder  Specify a single folder to run from a collection.
+1.System 
+2.TSG
+3.Tools
+4.Others
+5.Kafka Topics (Deprecated)
+6.Test
+"
+
+BIN_PATH=$(cd `dirname $0`; pwd)
+COLLECTION_FILE=`find $BIN_PATH -name '*'postman_collection.json|xargs| awk -F" " '{print $1}'`
+ENV_FILE=Prod.postman_environment.json
+
+FOLDER="--folder "
+
+if [[ -n "$1" ]];then
+ case $1 in
+    1)
+        FOLDER+="System"
+        ;;
+    2)
+        FOLDER+="TSG"
+        ;;
+    3)
+        FOLDER+="Tools"
+        ;;
+    4)
+        FOLDER+="Others"
+        ;;
+    5)
+        FOLDER+="Kafka Topics (Deprecated)"
+        ;;
+    6)
+        FOLDER+="Test"
+        ;;
+    *)
+        FOLDER="" #all
+ esac
+else
+  FOLDER="" #all
+fi
+
+echo $FOLDER
+
+newman run $COLLECTION_FILE -n 1 -e $ENV_FILE --delay-request 200 --timeout-script 10000  --timeout-request 300000 --timeout  3600000 --insecure \
+$FOLDER

@@ -1,0 +1,7 @@
+#注意这里面定义的key中不能包含减号-,否则程序无法识别定义的key
+#执行脚本的目录
+soft_home_path: troubleshooting
+
+check_word: recv_time
+
+top_check_word: __time
